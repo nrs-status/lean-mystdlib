@@ -17,11 +17,14 @@ def Array.backN_aux (n : Nat) (ar : Array α) (h : n ≤ ar.size) (accum : Array
     let new_accum := accum.push (ar.back (by grind))
     ar.pop.backN_aux nn (by grind) new_accum
 
-def Array.backNRev (n : Nat) (ar : Array α) (h : n ≤ ar.size) : Array α :=
+def Array.backNRev (ar : Array α) (n : Nat)  (h : n ≤ ar.size) : Array α :=
   ar.backN_aux n h #[]
 
-def Array.backN (n : Nat) (ar : Array α) (h : n ≤ ar.size) : Array α :=
+def Array.backN (ar : Array α) (n : Nat)  (h : n ≤ ar.size) : Array α :=
   Array.reverse <| ar.backN_aux n h #[]
+
+def Array.backN! (ar : Array α) (n : Nat) : Array α :=
+  if h : n ≤ ar.size then ar.backN n h else ar
 
 def Array.backWhile_impl (ar : Array α) (pred : α -> Bool) (accum : Array α) (h : 0 < ar.size) : Array α :=
   let xback := ar.back h
