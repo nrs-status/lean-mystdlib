@@ -1,4 +1,4 @@
-
+import Mystdlib
 
 partial def collect {α β : Type}  (recur_info : α -> Array α) (collection_fn : α -> Option β) (a : α) : Array β :=
     runST fun σ => do
@@ -17,3 +17,6 @@ partial def replace (recur_info : α -> Option (β × Array α)) (of_recur : β 
     match recur_info a with
     | .some (xβ, recur_result) => of_recur (xβ, recur_result.map (replace recur_info of_recur replace_fn))
     | .none => a
+
+
+
