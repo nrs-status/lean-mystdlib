@@ -1,5 +1,5 @@
 import Lean 
-import Mystdlib.RecursionSchemes
+import Mystdlib.Recursive
 
 open Lean 
 
