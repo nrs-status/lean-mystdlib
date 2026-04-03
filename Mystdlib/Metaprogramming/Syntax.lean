@@ -47,14 +47,8 @@ partial def Lean.Syntax.getAtLeaf? (stx : Syntax) (parser_nms : Array Name) (h :
   | _ => .none
   else .none
 
-partial def Lean.Syntax.collect (stx : Syntax) (collection_fn : Syntax -> Option α)  : Array α :=
-  _root_.collect (fun | .node _ _ sub_stx => sub_stx | _ => #[]) collection_fn stx
-
-partial def Lean.Syntax.replace (stx : Syntax) (replace_fn : Syntax -> Option Syntax) : Syntax :=
-  _root_.replace 
-    (fun | .node info kind sub_stx => .some ((info, kind), sub_stx) | _ => .none) 
-    (fun ((info, kind), rec_result) => .node info kind rec_result)
-    replace_fn 
-    stx
-
+instance : Recursive Syntax where
+  ctor_aux := SourceInfo × SyntaxNodeKind
+  recur_info := fun | .node inf kind substx => .some ((inf, kind), substx) | _ => .none
+  of_recur := fun ((inf, kind), recur_result) => .node inf kind recur_result
 
