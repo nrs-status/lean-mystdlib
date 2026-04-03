@@ -1,0 +1,12 @@
+name = "mystdlib"
+version = "0.1.0"
+defaultTargets = ["mystdlib"]
+
+[[lean_lib]]
+name = "Mystdlib"
+
+[[require]]
+name = "mathlib"
+git = "https://github.com/leanprover-community/mathlib4-nightly-testing"
+rev = "f80b5e44ea5c7ba214391d936e993462fb1f0e0a"
+
