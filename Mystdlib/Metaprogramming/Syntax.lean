@@ -1,5 +1,4 @@
 import Lean 
-import Mystdlib.General
 import Mystdlib.RecursionSchemes
 
 open Lean 
@@ -33,7 +32,7 @@ partial def Syntax.getAt?_impl (stx : Syntax) (parser_nms_rev : Array Name) (h :
   | .node _ kind sub_stx => if kind = parser_nms_rev.back (by grind) 
     then if h' : parser_nms_rev.pop.isEmpty
       then sub_stx
-      else sub_stx.findSome? fun stx' => recur stx' parser_nms_rev.pop h'
+      else sub_stx.findSome? fun stx' => Syntax.getAt?_impl stx' parser_nms_rev.pop h'
     else .none
   | _ => .none
 
