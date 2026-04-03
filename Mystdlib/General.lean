@@ -45,7 +45,8 @@ def elab_w_elab : TermElab := fun stx et? =>
 
 --
 
-macro "#run_elab " x:doSeq : command => `(#eval show TermElabM Unit from do $x)
+macro "#run_elab " x:doSeq : command => `(#eval show Lean.Elab.TermElabM Unit from do $x)
+
 
 --
 
