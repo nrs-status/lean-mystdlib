@@ -1,6 +1,9 @@
 import Mystdlib.Metaprogramming.Syntax
+import Mystdlib.Recursive
 import Mystdlib.Array
 import Batteries.Data.Array
+
+open Recursive
 
 
 open Lean
@@ -17,7 +20,7 @@ def anon_fn_collect_wf (ar : Array Nat) : Bool :=
   starts_at_zero && correct_ordering
 
 def anon_fn_vars_to_fvars (stx : Syntax) : Syntax :=
-  stx.replace 
+  replace stx
     (match ·.getAnonVarId? with | .some n => return mkIdent ("__anon_fn_var_" ++ toString n).toName | _ => .none)
 
 syntax (name := anon_fn_var_pdescr) "%" num : term
@@ -27,7 +30,7 @@ open Elab Term in
 @[term_elab anon_fn_pdescr]
 def elab_anon_fn : TermElab
 | `(#($x)), t? => do
-  let var_ids := x.raw.collect Lean.Syntax.getAnonVarId? |>.dedupSorted
+  let var_ids := collect x.raw Lean.Syntax.getAnonVarId? |>.dedupSorted
   if ¬ var_ids.isEmpty
   then
     let fun_binders := var_ids.map ("__anon_fn_var_" ++ toString ·)

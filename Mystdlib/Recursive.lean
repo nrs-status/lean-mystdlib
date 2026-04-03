@@ -16,12 +16,12 @@ partial def Recursive.collect [Recursive α] (a : α) (collection_fn : α -> Opt
     aux a
     ref.get
 
-partial def Recursive.replace [Recursive α] (replace_fn : α -> Option α) (a : α) : α :=
+partial def Recursive.replace [Recursive α] (a : α) (replace_fn : α -> Option α)  : α :=
   match replace_fn a with
   | .some x => x
   | .none =>
     match recur_info a with
-    | .some (xβ, recur_result) => of_recur (xβ, recur_result.map (Recursive.replace replace_fn))
+    | .some (xβ, recur_result) => of_recur (xβ, recur_result.map (Recursive.replace · replace_fn))
     | .none => a
 
 
