@@ -23,7 +23,7 @@ def anon_fn_vars_to_fvars (stx : Syntax) : Syntax :=
   replace stx
     (match ·.getAnonVarId? with | .some n => return mkIdent ("__anon_fn_var_" ++ toString n).toName | _ => .none)
 
-syntax (name := anon_fn_var_pdescr) "%" num : term
+syntax (name := anon_fn_var_pdescr) "·" num : term
 syntax (name := anon_fn_pdescr) "#(" term ")" : term
 
 open Elab Term in
