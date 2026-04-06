@@ -14,3 +14,4 @@ macro "_throwError" : term => `(throwError "NO ERROR SPECIFIED")
 
 macro "throw_notype" : term => `(throwError m!"elaborator {decl_name%} requires an expected type but there is none")
 
+macro "unreachable" : term => `(throwError "reached code that is expected to be unreachable")
