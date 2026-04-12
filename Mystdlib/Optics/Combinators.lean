@@ -66,3 +66,26 @@ instance {m : Type -> Type} {β : Type} [Monad m] : @Tambara _ _ _ (· -> m ·) 
   @Tambara.mk _ _ _ _ _ kleisliCat _ _ _ _ _ _ _ _ kleisliBifunctor _ kleisliMonoidalAction _ _ _ <|
   fun u _ b (w, x) => fmap (w, ·) (u b x)
 
+def Replacing (α β ς τ) := (α -> β) -> ς -> τ
+
+instance {α β : Type u} : Profunctor (Replacing α β) where
+  map := fun l r u f => r ∘ u f ∘ l
+
+instance {α β : Type u} : Tambara _ _ Prod Prod Prod (Replacing α β) where
+  tambara := fun u f x => (x.1, u f x.2)
+
+instance {α β : Type u} : Tambara _ _ Sum Sum Sum (Replacing α β) where
+  tambara := fun u f x => x.casesOn Sum.inl (Sum.inr ∘ u f)
+
+instance {α β : Type u} : Tambara _ _ functorComp (Appσ Functor) (Appσ Functor) (Replacing α β) where
+  tambara := fun {_} _ μ u f x =>
+    μ.2.map (u f) x
+
+instance {α β : Type u} : Tambara _ _ applicativeComp (Appσ Applicative) (Appσ Applicative) (Replacing α β) where
+  tambara := fun {_} _ μ u f x => 
+  μ.2.toFunctor.map (u f) x
+
+instance {α β : Type u} : Tambara _ _ traversableComp (Appσ Traversable) (Appσ Traversable) (Replacing α β) where
+  tambara := fun {_} _ μ u f x =>
+    μ.2.toFunctor.map (u f) x
+
