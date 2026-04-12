@@ -195,11 +195,11 @@ instance [Monad m] : Category (Σα, MonadAlg m α) (·.1 -> ·.1) where
   comp := Function.comp
 
 @[reducible]
-def MonadAlgProd (m) [Monad m] (σ₁ σ₂ : Σα, MonadAlg m α) : Σα, MonadAlg m α :=
+def monadAlgProd (m) [Monad m] (σ₁ σ₂ : Σα, MonadAlg m α) : Σα, MonadAlg m α :=
   ⟨σ₁.1 × σ₂.1, ⟨fun xm => (σ₁.2.alg (Functor.map Prod.fst xm), σ₂.2.alg (Functor.map Prod.snd xm))⟩⟩
 
 
-instance [Monad m] : Bifunctor (Sigma.fst · -> Sigma.fst ·) (Sigma.fst · -> Sigma.fst ·) (Sigma.fst · -> Sigma.fst ·) (MonadAlgProd m) where
+instance [Monad m] : Bifunctor (Sigma.fst · -> Sigma.fst ·) (Sigma.fst · -> Sigma.fst ·) (Sigma.fst · -> Sigma.fst ·) (monadAlgProd m) where
   map := fun f g h => (f h.1, g h.2)
 
 instance [Monad m] : MonadAlg m Unit where
@@ -208,7 +208,7 @@ instance [Monad m] : MonadAlg m Unit where
 instance [Monad m] [MonadAlg m α] [MonadAlg m β] : MonadAlg m (α × β) where
   alg := fun xm => (MonadAlg.alg (Functor.map Prod.fst xm), MonadAlg.alg (Functor.map Prod.snd xm))
 
-instance [Monad m] : MonoidalCat (Σα, MonadAlg m α) (fun σ₁ σ₂ => σ₁.1 -> σ₂.1) (MonadAlgProd m) where
+instance [Monad m] : MonoidalCat (Σα, MonadAlg m α) (fun σ₁ σ₂ => σ₁.1 -> σ₂.1) (monadAlgProd m) where
   tensorUnit := ⟨Unit, inferInstance⟩
   associator := {
     hom := Prod.assoc_inv
@@ -225,11 +225,13 @@ instance [Monad m] : MonoidalCat (Σα, MonadAlg m α) (fun σ₁ σ₂ => σ₁
     inv := (·, .unit)
   }
 
-instance [Monad m] : Bifunctor (Sigma.fst · -> Sigma.fst ·) (· -> ·) (· -> ·) (fun (σ : Σα, MonadAlg m α) (α : Type) => σ.1 × α) where
+def monadAlgProdAction [Monad m] := fun (σ : Σα, MonadAlg m α) (α : Type _) => σ.1 × α
+
+instance [Monad m] : Bifunctor (Sigma.fst · -> Sigma.fst ·) (· -> ·) (· -> ·) (monadAlgProdAction (m := m)) where
   map := fun f g p => (f p.1, g p.2)
 
 
-instance [Monad m] : MonoidalAction (MonadAlgProd m) (fun (σ : Σα, MonadAlg m α) (α : Type) => σ.1 × α) where
+instance [Monad m] : MonoidalAction (monadAlgProd m) monadAlgProdAction where
   unitor := {
     hom := Prod.snd
     inv := (.unit, ·)

@@ -21,6 +21,10 @@ instance [instf : Applicative F] [instg : Applicative G] : Applicative (G ∘ F)
 def Monad.join [Monad m] : m (m α) -> m α :=
   fun xm => do (<- xm)
 
+instance : Monad List where
+  pure := ([ · ])
+  bind := fun l f => List.flatten (fmap f l)
+
 --
 
 syntax (name := recur_pdescr) "recur" : term

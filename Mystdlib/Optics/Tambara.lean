@@ -19,6 +19,7 @@ inductive Optic
 class Tambara 
   [Category C₀ C₁] 
   [Category D₀ D₁] 
+  (M₀ M₁)
   [Category M₀ M₁]
   (O)
   [MonoidalCat M₀ M₁ O]
@@ -47,7 +48,7 @@ def ProfOptic
   [MonoidalAction O actionₗ]
   [MonoidalAction O actionᵣ]
   (α β ς τ)
-  := {P : D₀ -> C₀ -> Type _} -> [Profunctor P] -> [Tambara O actionₗ actionᵣ P] -> P α β -> P ς τ
+  := {P : D₀ -> C₀ -> Type _} -> [Profunctor P] -> [Tambara _ _ O actionₗ actionᵣ P] -> P α β -> P ς τ
 
 def Optic.toProfOptic
   [Category C₀ C₁] 
@@ -97,7 +98,7 @@ instance
   [Bifunctor _ _ _ actionᵣ]
   [insta : MonoidalAction O actionₗ]
   [MonoidalAction O actionᵣ]
-  : Tambara O actionₗ actionᵣ (Optic O actionₗ actionᵣ α β) where
+  : Tambara _ _ O actionₗ actionᵣ (Optic O actionₗ actionᵣ α β) where
     tambara := fun {α' β' μ} xopt => match xopt with
     | .mk (μ := μ') l r =>
       have thisa := @MonoidalAction.multiplicator _ _ _ M₁ inferInstance inferInstance O inferInstance inferInstance _ inferInstance _ _ _ _
