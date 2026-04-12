@@ -1,5 +1,26 @@
 import Lean
 
+
+
+def Prod.assoc : α × β × γ -> (α × β) × γ :=
+  fun (a, b, c) => ((a, b), c)
+
+def Prod.assoc_inv : (α × β) × γ -> α × β × γ :=
+  fun ((a, b), c) => (a, b, c)
+
+abbrev fmap [Functor F] (f : α -> β) (xfα : F α) : F β := Functor.map f xfα
+
+instance [Functor F] [Functor G] : Functor (G ∘ F) where
+  map := fun f => ((Functor.map (Functor.map f)) ·)
+
+instance [instf : Applicative F] [instg : Applicative G] : Applicative (G ∘ F) where
+    pure := fun a => let aux := instg.pure a; let r := fmap instf.pure aux; r
+    seq := fun f g =>   instg.seq (fmap (fun f' g' => instf.seq f' (fun _ => g')) f) g
+
+
+def Monad.join [Monad m] : m (m α) -> m α :=
+  fun xm => do (<- xm)
+
 --
 
 syntax (name := recur_pdescr) "recur" : term
