@@ -94,6 +94,7 @@ instance : MonoidalCat (Type _) (· -> ·) Prod where
   rightUnitor := ⟨Prod.fst, fun x => (x, .unit)⟩
 
 
+
 instance : MonoidalCat (Type _) (· -> ·) Sum where
   tensorUnit := Empty
   associator := { 
@@ -243,24 +244,23 @@ instance [Monad m] : MonoidalAction (monadAlgProd m) monadAlgProdAction where
 
 
 @[reducible]
-def KleisliCat {m : Type u -> Type u} [Monad m] : Category (Type _) (· -> m ·) where
+def kleisliCat {m : Type u -> Type u} [Monad m] : Category (Type _) (· -> m ·) where
   id := pure
   comp := fun f g x => Monad.join (fmap f (g x))
 
 @[reducible]
-def KleisliBifunctor {m : Type u -> Type u} [Monad m] : @Bifunctor _ _ _ (· -> ·) (· -> m ·) (· -> m ·) _ KleisliCat KleisliCat Prod :=
-  @Bifunctor.mk _ _ _ _ _ _ _ KleisliCat KleisliCat _
+def kleisliBifunctor {m : Type u -> Type u} [Monad m] : @Bifunctor _ _ _ (· -> ·) (· -> m ·) (· -> m ·) _ kleisliCat kleisliCat Prod :=
+  @Bifunctor.mk _ _ _ _ _ _ _ kleisliCat kleisliCat _
     fun f g x => fmap (fun d => (f x.1, d)) (g x.2)
 
-@[reducible]
-def KleisliMonoidalAction {m : Type u -> Type u} [Monad m] : @MonoidalAction (Type _) (· -> ·) (Type _) (· -> ·) _ _ Prod _ _ Prod _ := inferInstance
+/- @[reducible] -/
+/- def kleisliMonoidalAction {m : Type u -> Type u} [Monad m] : @MonoidalAction (Type _) (· -> ·) (Type _) (· -> ·) _ _ Prod _ _ Prod _ := inferInstance -/
 
-
 @[reducible]
-def KleisliMonoidalAction' {m : Type _ -> Type _} [Monad m] : @MonoidalAction (Type _) (· -> m ·) (Type _) (· -> ·) KleisliCat _ Prod _ _ _ KleisliBifunctor :=
-  @MonoidalAction.mk _ _ _ _ KleisliCat _ _ _ _ _ KleisliBifunctor 
-    (fun {X} => (@IsoStruct.mk _ _ KleisliCat _ _ (pure ∘ Prod.snd) (fun x => pure (.unit, x))))
-    (fun {X P Q} => @IsoStruct.mk _ _ KleisliCat _ _ 
+def kleisliMonoidalAction {m : Type _ -> Type _} [Monad m] : @MonoidalAction (Type _) (· -> m ·) (Type _) (· -> ·) kleisliCat _ Prod _ _ _ kleisliBifunctor :=
+  @MonoidalAction.mk _ _ _ _ kleisliCat _ _ _ _ _ kleisliBifunctor 
+    (fun {X} => (@IsoStruct.mk _ _ kleisliCat _ _ (pure ∘ Prod.snd) (fun x => pure (.unit, x))))
+    (fun {X P Q} => @IsoStruct.mk _ _ kleisliCat _ _ 
       (fun x => pure (Prod.assoc x)) 
       (fun x => pure (Prod.assoc_inv x)))
 

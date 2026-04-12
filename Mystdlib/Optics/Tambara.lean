@@ -124,3 +124,4 @@ def ProfOptic.toOptic
       xprofopt (Optic.mk monaxa.unitor.inv monaxb.unitor.hom)
 
 
+def test := 7

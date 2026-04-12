@@ -15,14 +15,14 @@ def Prism (α ς) := ProfOptic _ _ Sum Sum Sum α α ς ς
 def Prism.mk (f : ς -> ς ⊕ α) (g : α -> ς) : Prism α ς :=
   Optic.toProfOptic Sum Sum (Optic.mk (O := Sum) f (·.casesOn id g))
 
-def AlgebraicLens (m α ς) [Monad m] := ProfOptic (Σα, MonadAlg m α) (Sigma.fst · -> Sigma.fst ·) (MonadAlgProd m) (Sigma.fst · × ·) (Sigma.fst · × ·) α α ς ς
+def AlgebraicLens (m α ς) [Monad m] := ProfOptic (Σα, MonadAlg m α) (Sigma.fst · -> Sigma.fst ·) (monadAlgProd m) monadAlgProdAction monadAlgProdAction α α ς ς
 
 def AlgebraicLens.mk [Monad m] (α ς) (f : ς -> α) (g : m ς -> α -> ς) : AlgebraicLens m α ς :=
   have := Optic.mk 
-    (O := MonadAlgProd m) 
+    (O := monadAlgProd m) 
     (μ := ⟨m ς, inferInstance⟩) 
-    (actionₗ := (fun (x1 : (α : Type) × MonadAlg m α) x2 => x1.fst × x2)) 
-    (actionᵣ := (fun (x1 : (α : Type) × MonadAlg m α) x2 => x1.fst × x2)) 
+    (actionₗ := monadAlgProdAction) 
+    (actionᵣ := monadAlgProdAction) 
     (fun s => (pure s, f s)) 
     (fun ⟨sm, a⟩ => g sm a)
   Optic.toProfOptic _ _ this
@@ -44,14 +44,14 @@ def Kaleidoscope.mk (f : (Σn, { l : List α // l.length = n } -> α) -> (List �
   Optic.toProfOptic _ _ this
 
 def MonadicLens (m) [Monad m] (α β ς τ) := 
-  @ProfOptic _ (· -> m ·) _ _ KleisliCat _ _ (· -> ·) Prod _ _ Prod Prod _ _ KleisliBifunctor (KleisliMonoidalAction (m := m)) KleisliMonoidalAction' α β ς τ
+  @ProfOptic _ (· -> m ·) _ _ kleisliCat _ _ (· -> ·) Prod _ _ Prod Prod _ _ kleisliBifunctor _ kleisliMonoidalAction α β ς τ
 
 def MonadicLens.mk {m α β ς τ} [Monad m] (get : ς -> α) (set : ς -> β -> m τ) : MonadicLens m α β ς τ :=
   let := @Optic.mk
-    _ (· -> m ·) _ (· -> ·) _ _ KleisliCat _ _ Prod _ Prod Prod _ _ KleisliBifunctor (KleisliMonoidalAction (m := m)) KleisliMonoidalAction' α β ς τ _ 
+    _ (· -> m ·) _ (· -> ·) _ _ kleisliCat _ _ Prod _ Prod Prod _ _ kleisliBifunctor _ kleisliMonoidalAction α β ς τ _ 
     (fun s => Prod.mk s (get s)) 
     (Function.uncurry set)
-  @Optic.toProfOptic _ _ _ _ _ _ _ KleisliCat _ _ _ _ _ _ _ KleisliBifunctor _ KleisliMonoidalAction' _ _ _ _ this _ _ _
+  @Optic.toProfOptic _ _ _ _ _ _ _ kleisliCat _ _ _ _ _ _ _ kleisliBifunctor _ kleisliMonoidalAction _ _ _ _ this _ _ _
 
 def Traversal (α ς) := ProfOptic _ _ traversableComp (Appσ Traversable) (Appσ Traversable) α α ς ς 
 

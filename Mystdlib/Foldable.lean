@@ -23,15 +23,22 @@ class Foldable (t : Type -> Type) where
   foldMap [Monoid m] : (α -> m) -> t α -> m :=
     fun f xtα => foldr (Append.append ∘ f) mempty xtα
   foldr : (α -> β -> β) -> β -> t α -> β :=
-    fun f xβ xfα => foldMap (m := β -> β) f xfα xβ
+    fun f init xs => foldl (β := β -> β) (fun k x z => k (f x z)) id xs init
+  foldl : (β -> α -> β) -> β -> t α -> β :=
+    fun f init xs => foldr (β := β -> β) (fun x k z => k (f z x)) id xs init
 export Foldable (foldMap)
-
 
 instance : Foldable List where
   foldr := List.foldr
+  foldl := List.foldl
 
 instance : Foldable Array where
   foldr := Array.foldr
+  foldl := Array.foldl
+
+def flatMap [Foldable t] (f : α -> Array β) (as : t α) : Array β :=
+  Foldable.foldl (fun bs a => bs ++ f a) ∅ as
+
 
 class Filterable F extends Functor F where
   filterMap : (α -> Option β) -> F α -> F β :=
@@ -48,3 +55,5 @@ instance : Filterable List where
 instance : Filterable Array where
   filterMap := Array.filterMap
   reduceOption := Array.reduceOption
+
+

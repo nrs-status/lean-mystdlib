@@ -58,3 +58,11 @@ def Updating (m β ς τ) := [Monad m] -> β -> ς -> m τ
 instance {m : Type u -> Type v} {β : Type v} [Monad m] : Profunctor (Updating m β) where
   map := fun l r u _ b x => fmap r (u b (l x))
 
+instance {m : Type v -> Type v} {β : Type v} [Monad m] : @Profunctor _ (· -> ·) _ (· -> m ·) _ kleisliCat (Updating m β) :=
+  @Profunctor.mk _ _ _ _ _ kleisliCat _ <|
+    fun l r u _ x y => fmap r (Monad.join (fmap (u x) (l y)))
+
+instance {m : Type -> Type} {β : Type} [Monad m] : @Tambara _ _ _ (· -> m ·) _ kleisliCat _ _ _ Prod _ Prod Prod _ kleisliBifunctor _ kleisliMonoidalAction _ (Updating m β) _ :=
+  @Tambara.mk _ _ _ _ _ kleisliCat _ _ _ _ _ _ _ _ kleisliBifunctor _ kleisliMonoidalAction _ _ _ <|
+  fun u _ b (w, x) => fmap (w, ·) (u b x)
+
