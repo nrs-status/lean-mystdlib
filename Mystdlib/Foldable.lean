@@ -36,7 +36,6 @@ instance : Foldable Array where
   foldr := Array.foldr
   foldl := Array.foldl
 
-namespace Foldable
 
 def flatMap [Foldable t] (f : α -> Array β) (as : t α) : Array β :=
   Foldable.foldl (fun bs a => bs ++ f a) ∅ as
@@ -45,7 +44,6 @@ def toList [Foldable t] (as : t α) : List α := Foldable.foldr .cons ∅ as
 
 def toArray [Foldable t] (as : t α) : Array α := Foldable.foldl (fun as a => as.push a) ∅ as
 
-end Foldable
 
 class Filterable F extends Functor F where
   filterMap : (α -> Option β) -> F α -> F β :=
