@@ -55,7 +55,7 @@ instance {F : Type u -> Type u} [inst : Applicative F] : TypeTamb Sum Sum Sum (�
   | .inl x' => pure (.inl x')
   | .inr x' => fmap .inr (f x')
 
-def Setting (α β : Type u) := fun (ς τ : Type u) => (α -> β) -> ς -> τ
+abbrev Setting (α β : Type u) := fun (ς τ : Type u) => (α -> β) -> ς -> τ
 
 instance : TypeProf (Setting α β) where
   map := fun f g x h k => g (x h (f k))
@@ -66,7 +66,7 @@ instance : TypeTamb Prod Prod Prod (Setting α β) where
 instance : TypeTamb Sum Sum Sum (Setting α β) where
   tambara := fun f g x => x.elim .inl (.inr ∘ f g)
 
-def Replacing (α β ς τ : Type u) := (α -> β) -> ς -> τ
+abbrev Replacing (α β ς τ : Type u) := (α -> β) -> ς -> τ
 
 instance : TypeProf (Replacing α β) where
   map := fun l r u f => r ∘ u f ∘ l
@@ -107,5 +107,13 @@ def matching
   : ς -> τ ⊕ α
   := xprofopt (fun s t => s -> t ⊕ α) .inr
   
+def set
+  [Tambara monobj monhom tensorObj Trivial (· -> ·) actionₗ actionᵣ (Setting α β)]
+  : β -> ς -> τ
+  := fun b => xprofopt (Setting α β) id (fun _ => b)
 
+def over 
+  [Tambara monobj monhom tensorObj Trivial (· -> ·) actionₗ actionᵣ (Replacing α β)]
+  : (α -> β) -> ς -> τ
+  := xprofopt (Replacing α β) id
 

@@ -19,7 +19,7 @@ instance : Profunctor (· -> ·) where
 
 instance : Profunctor (fun _ x => x) where
   map := fun _ => id
-
+ 
 instance {F : Type u -> Type u} [Functor F] : Profunctor (· -> F ·) where
   map := fun f g h => (Functor.map g ∘ h) ∘ f
 
@@ -137,5 +137,10 @@ def Lens.view
   (xlens : Lens α β ς τ)
   : ς -> α
   := xlens.on (fun x _ => x -> α) id
+
+def Lens.set
+  (xlens : Lens α β ς τ)
+  : β -> ς -> τ
+  := xlens.on (fun s t => (α -> β) -> s -> t)
 
 
