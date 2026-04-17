@@ -1,4 +1,4 @@
-import Mystdlib.Optics.Categories
+import Mystdlib.Optics.TambaraBundled.Categories
 
 inductive Optic 
   [Category C₀ C₁] 
@@ -124,4 +124,3 @@ def ProfOptic.toOptic
       xprofopt (Optic.mk monaxa.unitor.inv monaxb.unitor.hom)
 
 
-def test := 7

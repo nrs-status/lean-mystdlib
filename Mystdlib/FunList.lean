@@ -18,11 +18,17 @@ def FunList.unfold_type_fmap (f : β -> γ) : FunList.unfold_type n α β -> Fun
   | .zero => f
   | .succ nn => fun g a => recur f (g a)
 
+instance : Functor (FunList.unfold_type n α) where
+  map := FunList.unfold_type_fmap
+
+instance {n : Nat} : Functor (FunList.unfold_type n.succ α) where
+  map := FunList.unfold_type_fmap
+
 def FunList (ς α β : Type) : Type :=
   Σn, { l : List ς // l.length = n } × FunList.unfold_type n α β
 
 instance : Functor (FunList ς α ·) where
-  map := fun f ⟨n, (l, t)⟩ => ⟨n, (l, FunList.unfold_type_fmap f t)⟩
+  map := fun f ⟨n, (l, t)⟩ => ⟨n, (l, fmap f t)⟩
 
 def FunList.unfold_type_join_aux : unfold_type (nn.succ + m) α β = unfold_type (nn + m).succ α β := by grind
 
@@ -57,3 +63,53 @@ def FunList.unfold : FunList ς α β -> (n : Nat) × ({ l : List ς // l.length
   match n with
   | .zero => fun _ => f
   | .succ _ => FunList.unfold_aux f
+
+def FunList.listfn_curry_aux {n : Nat}  (f : { l : List α // l.length = n.succ } -> β) (a : α) : {l : List α // l.length = n } -> β :=
+  fun l => f ⟨.cons a l.1, by grind⟩
+
+def FunList.listfn_curry (f : { l : List α // l.length = n } -> β) : FunList.unfold_type n α β := match n with
+| .zero => f ∅<:
+| .succ nn => fun a => FunList.listfn_curry (FunList.listfn_curry_aux f a)
+
+def FunList.out (fl : FunList α β τ) : τ ⊕ (α × FunList α β (β -> τ)) :=
+  let ⟨n, (l, f)⟩ := FunList.unfold fl
+  match n with
+  | .zero => .inl (f ∅<:)
+  | .succ nn => .inr (l.1.head !p, ⟨nn, (l.1.tail<:, FunList.listfn_curry (fun l' b => f ⟨.cons b l'.1, !p⟩))⟩)
+
+def FunList.in : τ ⊕ (α × FunList α β (β -> τ)) -> FunList α β τ
+| .inl t => ⟨0, (∅<:, t)⟩
+| .inr (a, ⟨n, (l, u)⟩) => ⟨n.succ, ((.cons a l)<:, fun b => FunList.unfold_type_fmap (· b) u)⟩
+
+
+def FunList.fuse : FunList β β τ -> τ 
+| ⟨n, (l, fl)⟩ => match n with
+  | .zero => fl
+  | .succ nn => fuse ⟨nn, (l.val.tail<:, fl <| l.val.head !p)⟩
+termination_by x => x.fst
+
+def FunList.unfold_type_expand_one : unfold_type nn.succ γ τ -> unfold_type nn γ (γ -> τ) :=
+  fun f => match nn with
+  | .zero => f
+  | .succ nnn => fun y => recur (f y)
+
+
+def FunList.in' : α × FunList α β (β -> τ) -> FunList α β τ
+| (a, ⟨n, (l, utf)⟩) => match n with
+  | .zero => ⟨1, (⟨[a], !p⟩, utf)⟩
+  | .succ nn => 
+    have : (a :: l.val).length = nn.succ.succ := by grind
+    have thisa := FunList.unfold_type_expand_one utf
+    have thisb (b) := FunList.unfold_type_fmap (fun f => f b) utf
+    ⟨_, ((.cons a l.1)<:, by rw [this]; exact fun b => thisb b)⟩
+
+def FunList.traverse [Applicative F] : (α -> F β) -> FunList α γ τ -> F (FunList β γ τ) :=
+  fun f fl => match fl with
+  | ⟨n, (l, fl)⟩ => match h : n with
+    | .zero => pure ⟨_, (∅<:, fl)⟩
+    | .succ nn =>
+      match l with
+      | ⟨.cons a as, p⟩ =>
+        let r := FunList.traverse f ⟨nn, (⟨as, !p⟩, FunList.unfold_type_expand_one fl)⟩
+        FunList.in' <$> (Prod.mk <$> f a <*> r)
+termination_by _ x => x.fst

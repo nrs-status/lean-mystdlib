@@ -1,6 +1,6 @@
-import Mystdlib.Optics.Categories
-import Mystdlib.Optics.CategoriesInstances
-import Mystdlib.Optics.Tambara
+import Mystdlib.Optics.TambaraBundled.Categories
+import Mystdlib.Optics.TambaraBundled.CategoriesInstances
+import Mystdlib.Optics.TambaraBundled.Tambara
 
 instance : Profunctor (· -> ·) where
   map := fun f g x => (g ∘ x) ∘ f
@@ -88,4 +88,12 @@ instance {α β : Type u} : Tambara _ _ applicativeComp (Appσ Applicative) (App
 instance {α β : Type u} : Tambara _ _ traversableComp (Appσ Traversable) (Appσ Traversable) (Replacing α β) where
   tambara := fun {_} _ μ u f x =>
     μ.2.toFunctor.map (u f) x
+
+def view (l : (α -> α) -> (ς -> α)) (s : ς)  : α :=
+  (l id) s
+
+def preview (l : (α -> Option α) -> (ς -> Option α)) (s : ς) : Option α :=
+  (l pure) s
+
+
 

@@ -1,5 +1,5 @@
 import Mystdlib.General
-import Mystdlib.Optics.Categories
+import Mystdlib.Optics.TambaraBundled.Categories
 import Mathlib.Control.Traversable.Basic
 
 
