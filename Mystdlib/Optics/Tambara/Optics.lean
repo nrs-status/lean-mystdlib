@@ -2,6 +2,7 @@ import Mystdlib.Optics.Tambara.Tambara
 import Mystdlib.Optics.Tambara.CategoriesInstances
 import Mathlib.Control.Traversable.Basic
 
+
 def ExLens (α β ς τ : Type u) := ExOptic Trivial (· -> ·) Prod Trivial (· -> ·) Prod Prod α β ς τ
 
 def ExLens.mk
@@ -12,7 +13,7 @@ def ExLens.mk
 
 def Lens (α β ς τ) := ProfOptic Trivial (· -> ·) Prod Trivial (· -> ·) Prod Prod α β ς τ
 
-def Lens' (α ς) := Lens α α ς ς 
+abbrev Lens' (α ς) := Lens α α ς ς 
 
 def Lens.mk
   (get : ς -> α)
@@ -32,7 +33,7 @@ def ExPrism.mk
 
 def Prism (α β ς τ) := ProfOptic Trivial (· -> ·) Sum Trivial (· -> ·) Sum Sum α β ς τ
 
-def Prism' (α ς) := Prism α α ς ς
+abbrev Prism' (α ς) := Prism α α ς ς
 
 def Prism.mk
   (match_ : ς -> τ ⊕ α)
@@ -43,7 +44,7 @@ def ExTraversal (α β ς τ) := ExOptic Traversable NatTsfm (· ∘ ·) Trivial
 
 def Traversal (α β ς τ) := ProfOptic Traversable NatTsfm (· ∘ ·) Trivial (· -> ·) (· ·) (· ·) α β ς τ
 
-def Traversal' (α ς) := Traversal α α ς ς
+abbrev Traversal' (α ς) := Traversal α α ς ς
 
 def ExTraversal.mk [Traversable F]  (f : ς -> F α) (g : F β -> τ) : ExTraversal α β ς τ  :=
   ExOptic.mk f g

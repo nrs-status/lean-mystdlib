@@ -44,6 +44,8 @@ def toList [Foldable t] (as : t α) : List α := Foldable.foldr .cons ∅ as
 
 def toArray [Foldable t] (as : t α) : Array α := Foldable.foldl (fun as a => as.push a) ∅ as
 
+def isEmpty [Foldable t] (as : t α) : Bool :=
+  if (toArray as).isEmpty then .true else .false
 
 class Filterable F extends Functor F where
   filterMap : (α -> Option β) -> F α -> F β :=
