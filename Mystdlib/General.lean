@@ -44,6 +44,8 @@ def mapA_attaching {m : Type u → Type v} [Applicative m] {α : Type w} {β : T
     fmap (fun b x => ⟨.cons b x.1, by grind⟩) (f a) <*> mapA_attaching f ⟨as, rfl⟩
 
 
+def amp (x : α) (f : α -> β) : β := f x
+
 
 --
 
