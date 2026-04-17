@@ -57,3 +57,7 @@ def Array.tuplize (ar : Array α) (n : Nat) (h : n ≤ ar.size := by grind) (p :
 def Array.and (ar : Array Bool) : Bool := ar.all id
 def Array.or (ar : Array Bool) : Bool := ar.any id
 
+
+instance : Monad Array where
+  pure := (#[·])
+  bind := fun l f => Array.flatten (fmap f l)

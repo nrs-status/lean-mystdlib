@@ -33,7 +33,7 @@ def Monad.join [Monad m] : m (m α) -> m α :=
   fun xm => do (<- xm)
 
 instance : Monad List where
-  pure := ([ · ])
+  pure := ([·])
   bind := fun l f => List.flatten (fmap f l)
 
 
@@ -42,7 +42,6 @@ def mapA_attaching {m : Type u → Type v} [Applicative m] {α : Type w} {β : T
   | []    => pure ⟨∅, by simp at p; simpa⟩
   | .cons a as => 
     fmap (fun b x => ⟨.cons b x.1, by grind⟩) (f a) <*> mapA_attaching f ⟨as, rfl⟩
-  --List.cons <$> f a <*> mapA_attaching f as
 
 
 

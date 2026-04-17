@@ -138,9 +138,5 @@ def Lens.view
   : ς -> α
   := xlens.on (fun x _ => x -> α) id
 
-def Lens.set
-  (xlens : Lens α β ς τ)
-  : β -> ς -> τ
-  := xlens.on (fun s t => (α -> β) -> s -> t)
 
 
