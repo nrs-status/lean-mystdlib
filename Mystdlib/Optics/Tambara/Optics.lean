@@ -21,9 +21,7 @@ def Lens.mk
   : Lens α β ς τ :=
   ExOptic.toProfOptic (ExLens.mk get set)
 
-
-
-def ExPrism (α β ς τ) := ExOptic Trivial (· -> ·) Sum Trivial (· -> ·) Sum Sum α β ς τ
+def ExPrism.{u} (α β ς τ) := ExOptic Trivial (· -> ·) Sum Trivial (· -> ·) Sum Sum.{u, u} α β ς τ
 
 def ExPrism.mk
   (match_ : ς -> τ ⊕ α)
@@ -38,7 +36,8 @@ abbrev Prism' (α ς) := Prism α α ς ς
 def Prism.mk
   (match_ : ς -> τ ⊕ α)
   (build : β -> τ)
-  : Prism α β ς τ := ExOptic.toProfOptic (ExPrism.mk match_ build)
+  : Prism.{u} α β ς τ := 
+  ExOptic.toProfOptic (ExPrism.mk match_ build)
 
 def ExTraversal (α β ς τ) := ExOptic Traversable NatTsfm (· ∘ ·) Trivial (· -> ·) (· ·) (· ·) α β ς τ
 

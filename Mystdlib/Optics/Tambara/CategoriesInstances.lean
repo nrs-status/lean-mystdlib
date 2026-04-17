@@ -55,13 +55,13 @@ instance : Bifunctor Trivial (· -> ·) Trivial (· -> ·) Trivial (· -> ·) Su
   map := fun f g =>
     Sum.elim (.inl ∘ f) (.inr ∘ g)
 
-instance : MonoidalCategory Trivial (· -> ·) Sum where
-  tensorUnit := Empty
+instance : MonoidalCategory Trivial (· -> ·) Sum.{u, u} where
+  tensorUnit := PEmpty
   associator := Sum.assoc_inv
   associator_inv := Sum.assoc
-  leftUnitor := Sum.elim Empty.elim id
+  leftUnitor := Sum.elim PEmpty.elim id
   leftUnitor_inv := .inr
-  rightUnitor := Sum.elim id Empty.elim
+  rightUnitor := Sum.elim id PEmpty.elim
   rightUnitor_inv := .inl
 
 instance {o : α -> α -> α} {obj : α -> Type u} {hom : α -> α -> Type u} [MonoidalCategory obj hom o]  : MonoidalAction obj hom o obj hom o where
@@ -71,7 +71,7 @@ instance {o : α -> α -> α} {obj : α -> Type u} {hom : α -> α -> Type u} [M
   multiplicator_inv := MonoidalCategory.associator obj
 
 instance : MonoidalAction Trivial (· -> ·) Sum Trivial.{u} (· -> ·) Sum where
-  unitor := fun x => x.elim Empty.elim id
+  unitor := fun x => x.elim PEmpty.elim id
   unitor_inv := .inr
   multiplicator := Sum.assoc
   multiplicator_inv := Sum.assoc_inv
