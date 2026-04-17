@@ -12,11 +12,15 @@ def ExLens.mk
 
 def Lens (α β ς τ) := ProfOptic Trivial (· -> ·) Prod Trivial (· -> ·) Prod Prod α β ς τ
 
+def Lens' (α ς) := Lens α α ς ς 
+
 def Lens.mk
   (get : ς -> α)
   (set : ς -> β -> τ)
   : Lens α β ς τ :=
   ExOptic.toProfOptic (ExLens.mk get set)
+
+
 
 def ExPrism (α β ς τ) := ExOptic Trivial (· -> ·) Sum Trivial (· -> ·) Sum Sum α β ς τ
 
@@ -28,6 +32,8 @@ def ExPrism.mk
 
 def Prism (α β ς τ) := ProfOptic Trivial (· -> ·) Sum Trivial (· -> ·) Sum Sum α β ς τ
 
+def Prism' (α ς) := Prism α α ς ς
+
 def Prism.mk
   (match_ : ς -> τ ⊕ α)
   (build : β -> τ)
@@ -36,6 +42,8 @@ def Prism.mk
 def ExTraversal (α β ς τ) := ExOptic Traversable NatTsfm (· ∘ ·) Trivial (· -> ·) (· ·) (· ·) α β ς τ
 
 def Traversal (α β ς τ) := ProfOptic Traversable NatTsfm (· ∘ ·) Trivial (· -> ·) (· ·) (· ·) α β ς τ
+
+def Traversal' (α ς) := Traversal α α ς ς
 
 def ExTraversal.mk [Traversable F]  (f : ς -> F α) (g : F β -> τ) : ExTraversal α β ς τ  :=
   ExOptic.mk f g

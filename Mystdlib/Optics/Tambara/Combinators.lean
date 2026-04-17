@@ -97,7 +97,7 @@ def preview
   : ς -> Option α 
   := xprofopt (fun x _ => x -> Option α) Option.some
 
-def build
+def review
   [Tambara monobj monhom tensorObj Trivial (· -> ·) actionₗ actionᵣ (fun _ x => x)]
   : β -> τ
   := xprofopt (fun _ x => x)
