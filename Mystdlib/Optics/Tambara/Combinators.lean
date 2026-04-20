@@ -3,6 +3,9 @@ import Mystdlib.Optics.Tambara.Tambara
 import Mystdlib.Optics.Tambara.CategoriesInstances
 import Mystdlib.Optics.Tambara.Optics
 
+
+open Tambara
+
 abbrev TypeProf (p : _) := Profunctor Trivial (· -> ·) Trivial (· -> ·) p
 
 instance : TypeProf (· -> ·) where
@@ -78,6 +81,8 @@ instance : TypeTamb Sum Sum Sum (Replacing α β) where
   tambara := fun u f x => x.casesOn Sum.inl (Sum.inr ∘ u f)
 
 variable
+  {monobj : μ -> Type u}
+  [Category monobj monhom]
  [MonoidalCategory monobj monhom tensorObj]
  [Liftable monobj Trivial Trivial actionₗ]
  [Liftable monobj Trivial Trivial actionᵣ]

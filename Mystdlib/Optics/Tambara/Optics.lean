@@ -2,6 +2,7 @@ import Mystdlib.Optics.Tambara.Tambara
 import Mystdlib.Optics.Tambara.CategoriesInstances
 import Mathlib.Control.Traversable.Basic
 
+open Tambara
 
 def ExLens (α β ς τ : Type u) := ExOptic Trivial (· -> ·) Prod Trivial (· -> ·) Prod Prod α β ς τ
 

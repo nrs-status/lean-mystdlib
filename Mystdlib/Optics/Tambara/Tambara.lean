@@ -1,3 +1,4 @@
+namespace Tambara
 
 class Quiver (carrier : Type u) where
   obj : carrier -> Type v
@@ -47,7 +48,7 @@ class Profunctor
     map [Obj objd d₂] [Obj objd d₁] [Obj objc c₁] [Obj objc c₂] : homd d₂ d₁ -> homc c₁ c₂ -> p d₁ c₁ -> p d₂ c₂
 
 
-class MonoidalCategory  (obj : α -> Type v) (hom) (tensorObj : α -> α -> α) extends Category obj hom, Liftable obj obj obj tensorObj, Bifunctor obj hom obj hom obj hom tensorObj where
+class MonoidalCategory  (obj : α -> Type v) (hom) (tensorObj : α -> α -> α) [Category obj hom] extends Liftable obj obj obj tensorObj, Bifunctor obj hom obj hom obj hom tensorObj where
   tensorUnit : α
   [tensorUnit_obj : Obj obj tensorUnit]
   associator : hom (tensorObj (tensorObj X Y) Z) (tensorObj X (tensorObj Y Z))
@@ -57,11 +58,14 @@ class MonoidalCategory  (obj : α -> Type v) (hom) (tensorObj : α -> α -> α) 
   rightUnitor : hom (tensorObj X tensorUnit) X
   rightUnitor_inv : hom X (tensorObj X tensorUnit)
 
-instance [moncat : MonoidalCategory obj hom tensorObj] : Obj obj moncat.tensorUnit := moncat.tensorUnit_obj
+instance 
+  [Category obj hom]
+  [moncat : MonoidalCategory obj hom tensorObj] : Obj obj moncat.tensorUnit := moncat.tensorUnit_obj
 
 class MonoidalAction
   (monobj monhom)
   (tensorObj : μ -> μ -> μ)
+  [Category monobj monhom]
   [moncat : MonoidalCategory monobj monhom tensorObj]
   (obj : γ -> Type _)
   (hom)
@@ -70,14 +74,15 @@ class MonoidalAction
   [Liftable monobj obj obj action]
   extends Bifunctor monobj monhom obj hom obj hom action
   where
-    unitor {X : γ} : hom (action moncat.tensorUnit X) X
-    unitor_inv {X : γ} : hom X (action moncat.tensorUnit X)
-    multiplicator {X : γ} {P Q : μ} : hom (action P (action Q X)) (action (tensorObj P Q) X)
-    multiplicator_inv {X : γ} {P Q : μ} : hom (action (tensorObj P Q) X) (action P (action Q X)) 
+    unitor [Obj obj X] : hom (action moncat.tensorUnit X) X
+    unitor_inv [Obj obj X] : hom X (action moncat.tensorUnit X)
+    multiplicator [Obj obj X] [Obj monobj P] [Obj monobj Q] : hom (action P (action Q X)) (action (tensorObj P Q) X)
+    multiplicator_inv [Obj obj X] [Obj monobj P] [Obj monobj Q] : hom (action (tensorObj P Q) X) (action P (action Q X)) 
 
 variable
   (monobj monhom)
   (tensorObj : μ -> μ -> μ)
+  [Category monobj monhom]
   [moncat : MonoidalCategory monobj monhom tensorObj]
   (obj : γ -> Type _)
   (hom)
@@ -145,4 +150,3 @@ def ProfOptic.toExOptic
   : ProfOptic monobj monhom tensorObj obj hom actionₗ actionᵣ α β ς τ -> ExOptic monobj monhom tensorObj obj hom actionₗ actionᵣ α β ς τ
   := fun xprofopt =>
     xprofopt _ (ExOptic.mk (MonoidalAction.unitor_inv (tensorObj := tensorObj) (monhom := monhom) obj) (MonoidalAction.unitor (tensorObj := tensorObj) (monobj := monobj) obj))
-
