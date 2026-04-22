@@ -32,6 +32,19 @@ def review
   [Tambs l (fun _ x => x)]
   : β -> τ
   := x (fun _ x => x)
+  
+instance : Profunctor (fun x _ => x -> Option α) where
+  map := fun f _ h => h ∘ f
+
+instance : Tamb ⟨Sum.{u,u}, Sum⟩ (fun x _ => x -> Option α) where
+  tamb := fun f => Sum.elim (fun _ => .none) f
+
+def preview
+  (x : ProfOptic μ l α β ς τ)
+  [Tambs l (fun x _ => x -> Option α)]
+  : ς -> Option α 
+  := x (fun x _ => x -> Option α) Option.some
+
 
 abbrev Setting (α β : Type u) := fun (ς τ : Type u) => (α -> β) -> ς -> τ
 
