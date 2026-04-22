@@ -67,6 +67,21 @@ def ProfOptic.compose
     have g := @y p ⟨fun i => this.snd.tambs i⟩
     f ∘ g
 
+instance 
+  [inst : Tambs l p]
+  [inst' : Tambs l' p]
+  : Tambs (l ++ l') p where
+    tambs := fun i =>
+      if h : i.val < l.length
+      then
+        have thisa : (l ++ l')[i] = l[i] := by grind
+        have thisb := inst.tambs (Fin.castLT i h)
+        ⟨by rw [thisa]; exact thisb.tamb⟩
+      else
+        have thisa : (l ++ l')[i] = l'.get ⟨i - l.length, by grind⟩ := by grind
+        have thisb := inst'.tambs ⟨i - l.length, by grind⟩
+        ⟨by rw [thisa]; exact thisb.tamb⟩
+
 inductive ExOptic
   (μ : _)
   (pair : ActionPair μ)
