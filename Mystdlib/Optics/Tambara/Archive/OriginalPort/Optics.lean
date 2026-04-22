@@ -69,7 +69,7 @@ instance : Functor (Split ς) where
   map := fun f (l, s) => (l.map f, s)
 
 instance : Traversable (Split.{u, u} ς) where
-  traverse := fun f (l, s) => fmap (flip Prod.mk s) (traverse f l)
+  traverse := fun f (l, s) => fmap (·, s) (traverse f l)
 
 def Traversal.mk {α ς} (f : ς -> List α × (List α -> ς)) : Traversal α ς :=
   Traversal.mk' (F := Split ς) 

@@ -113,3 +113,6 @@ def FunList.traverse [Applicative F] : (α -> F β) -> FunList α γ τ -> F (Fu
         let r := FunList.traverse f ⟨nn, (⟨as, !p⟩, FunList.unfold_type_expand_one fl)⟩
         FunList.in' <$> (Prod.mk <$> f a <*> r)
 termination_by _ x => x.fst
+
+def FunList.single (a : α) : FunList α β β :=
+  ⟨1, ([a]<:, id)⟩
