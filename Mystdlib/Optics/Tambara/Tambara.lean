@@ -145,3 +145,5 @@ def Traversal.mk
   := ExOptic.toProfOptic (ExTraversal.mk (F := Split ς) (fun s => (f s |>.fst, s)) (fun (l, s) => f s |>.snd l))
 
 def Traversal' (α ς) := Traversal α α ς ς
+
+

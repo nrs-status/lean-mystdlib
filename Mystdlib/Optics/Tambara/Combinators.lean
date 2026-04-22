@@ -124,3 +124,14 @@ def traverseOfExtract' -- for educational purposes
     have y₂ := Functor.map (·, y₁.snd) (traverse f y₁.fst)
     Functor.map (fun (l, s) => (extract s).snd l) y₂
 
+instance : Profunctor (fun s t => s -> t ⊕ α) where
+  map := fun f g h => (Sum.elim (.inl ∘ g) .inr ∘ h) ∘ f
+
+instance : Tamb ⟨Sum, Sum⟩ (fun (s t : Type u) => s -> t ⊕ α) where
+  tamb := fun f => Sum.elim (fun xm => .inl (.inl xm)) (fun a => (f a).elim (fun b => .inl (.inr b)) .inr)
+
+def matching
+  (x : ProfOptic μ l α β ς τ)
+  [Tambs l (fun (s t : Type u) => s -> t ⊕ α)]
+  : ς -> τ ⊕ α
+  := x (fun s t => s -> t ⊕ α) .inr
