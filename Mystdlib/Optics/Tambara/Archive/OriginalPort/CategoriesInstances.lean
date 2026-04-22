@@ -1,5 +1,5 @@
 import Mystdlib.General
-import Mystdlib.Optics.TambaraBundled.Categories
+import Mystdlib.Optics.Tambara.Archive.OriginalPort.Categories
 import Mathlib.Control.Traversable.Basic
 
 

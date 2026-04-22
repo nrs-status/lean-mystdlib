@@ -1,4 +1,4 @@
-import Mystdlib.Optics.Tambara.Combinators
+import Mystdlib.Optics.Tambara.Archive.NoCompose.Combinators
 
 class Cons (α β ς τ : Type u) where
   prism : Prism (α × ς) (β × τ) ς τ

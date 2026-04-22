@@ -1,0 +1,40 @@
+import Mystdlib.Optics.Tambara.Combinators
+
+class Cons (α β ς τ : Type u) where
+  prism : Prism (α × ς) (β × τ) ς τ
+
+abbrev Cons' (α ς) := Cons α α ς ς
+
+instance : Cons' α (List α) where
+  prism := Prism.mk 
+    (Function.uncurry List.cons)
+    (fun | .cons a as => .inr (a, as) | .nil => .inl .nil)
+
+instance : Cons' α (Array α) where
+  prism := Prism.mk
+    (fun (a, as) => #[a] ++ as)
+    (fun ar => if h : ar.isEmpty then .inl #[] else .inr (ar[0]'(by grind), ar.drop 1))
+
+def cons [inst : Cons' α ς] : α -> ς -> ς :=
+  Function.curry (review inst.prism)
+
+class Snoc (α β ς τ : Type u) where
+  prism : Prism (ς × α) (τ × β) ς τ
+
+abbrev Snoc' (α ς) := Snoc α α ς ς
+
+instance : Snoc' α (List α) where
+  prism := Prism.mk
+    (fun (l, a) => l ++ [a])
+    (fun l => if h : l.isEmpty then .inl l else .inr (l.dropLast, l.getLast (by grind)))
+
+instance : Snoc' α (Array α) where
+  prism := Prism.mk
+    (fun (ar, a) => ar.push a)
+    (fun ar => if h : ar.isEmpty then .inl ar else .inr (ar.pop, ar.back (by grind)))
+
+def snoc [inst : Snoc' α ς] : ς -> α -> ς :=
+  Function.curry (review inst.prism)
+
+
+

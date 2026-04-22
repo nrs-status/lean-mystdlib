@@ -1,6 +1,6 @@
-import Mystdlib.Optics.TambaraBundled.Categories
-import Mystdlib.Optics.TambaraBundled.CategoriesInstances
-import Mystdlib.Optics.TambaraBundled.Tambara
+import Mystdlib.Optics.Tambara.Archive.OriginalPort.Categories
+import Mystdlib.Optics.Tambara.Archive.OriginalPort.CategoriesInstances
+import Mystdlib.Optics.Tambara.Archive.OriginalPort.Tambara
 
 instance : Profunctor (· -> ·) where
   map := fun f g x => (g ∘ x) ∘ f

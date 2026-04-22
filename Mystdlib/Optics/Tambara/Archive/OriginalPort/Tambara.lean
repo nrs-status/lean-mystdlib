@@ -1,4 +1,4 @@
-import Mystdlib.Optics.TambaraBundled.Categories
+import Mystdlib.Optics.Tambara.Archive.OriginalPort.Categories
 
 inductive Optic 
   [Category C₀ C₁] 

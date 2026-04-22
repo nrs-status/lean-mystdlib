@@ -1,5 +1,5 @@
-import Mystdlib.Optics.Tambara.Tambara
-import Mystdlib.Optics.Tambara.CategoriesInstances
+import Mystdlib.Optics.Tambara.Archive.NoCompose.Tambara
+import Mystdlib.Optics.Tambara.Archive.NoCompose.CategoriesInstances
 import Mathlib.Control.Traversable.Basic
 
 open Tambara
@@ -48,6 +48,7 @@ abbrev Traversal' (α ς) := Traversal α α ς ς
 
 def ExTraversal.mk [Traversable F]  (f : ς -> F α) (g : F β -> τ) : ExTraversal α β ς τ  :=
   ExOptic.mk f g
+  -- xμ := F
 
 def Split ς α := List α × ς
 

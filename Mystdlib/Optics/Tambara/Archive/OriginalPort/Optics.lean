@@ -1,8 +1,8 @@
 import Mathlib.Control.Traversable.Basic
 import Mystdlib.FunList
-import Mystdlib.Optics.Categories
-import Mystdlib.Optics.CategoriesInstances
-import Mystdlib.Optics.Tambara
+import Mystdlib.Optics.Tambara.Archive.OriginalPort.Categories
+import Mystdlib.Optics.Tambara.Archive.OriginalPort.CategoriesInstances
+import Mystdlib.Optics.Tambara.Archive.OriginalPort.Tambara
 
 instance : Category Type (· -> ·) := inferInstance
 def Lens (α β ς τ : Type) := ProfOptic Type _ Prod Prod Prod α β ς τ 
