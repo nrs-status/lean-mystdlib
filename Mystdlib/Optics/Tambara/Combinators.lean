@@ -28,10 +28,45 @@ instance : Tamb ⟨Sum.{u, u}, Sum⟩ (fun _ x => x) where
   tamb := fun x => .inr x
 
 def review
-  --[Tambara monobj monhom tensorObj Trivial (· -> ·) actionₗ actionᵣ (fun _ x => x)]
   (x : ProfOptic μ l α β ς τ)
   [Tambs l (fun _ x => x)]
   : β -> τ
   := x (fun _ x => x)
+
+abbrev Setting (α β : Type u) := fun (ς τ : Type u) => (α -> β) -> ς -> τ
+
+instance : Profunctor (Setting α β) where
+  map := fun f g x h k => g (x h (f k))
+
+instance : Tamb ⟨Prod.{u, u}, Prod⟩ (Setting α β) where
+  tamb := fun f g x => (x.1, f g x.2)
+
+instance : Tamb ⟨Sum.{u,u}, Sum⟩ (Setting α β) where
+  tamb := fun f g x => x.elim .inl (.inr ∘ f g)
+
+def set
+  (x : ProfOptic μ l α β ς τ)
+  [Tambs l (Setting α β)]
+  : β -> ς -> τ
+  := fun b => x (Setting α β) id (fun _ => b)
+
+abbrev Replacing (α β ς τ : Type u) := (α -> β) -> ς -> τ
+
+instance : Profunctor (Replacing α β) where
+  map := fun l r u f => r ∘ u f ∘ l
+
+instance : Tamb ⟨Prod.{u,u}, Prod⟩ (Replacing α β) where
+  tamb := fun f g x => (x.1, f g x.2)
+
+instance : Tamb ⟨Sum.{u,u}, Sum⟩ (Replacing α β) where
+  tamb := fun u f x => x.casesOn Sum.inl (Sum.inr ∘ u f)
+
+def over 
+  (x : ProfOptic μ l α β ς τ)
+  [Tambs l (Replacing α β)]
+  : (α -> β) -> ς -> τ
+  := x (Replacing α β) id
+
+
 
 
