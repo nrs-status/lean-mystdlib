@@ -39,6 +39,9 @@ instance : Profunctor (fun x _ => x -> Option α) where
 instance : Tamb ⟨Sum.{u,u}, Sum⟩ (fun x _ => x -> Option α) where
   tamb := fun f => Sum.elim (fun _ => .none) f
 
+instance : Tamb ⟨Prod.{u,u}, Prod⟩ (fun x _ => x -> Option α) where
+  tamb := fun f x => f x.snd
+
 def preview
   (x : ProfOptic μ l α β ς τ)
   [Tambs l (fun x _ => x -> Option α)]
