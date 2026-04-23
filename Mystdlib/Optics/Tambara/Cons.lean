@@ -1,4 +1,7 @@
+import Mystdlib.Optics.Tambara.Optics
 import Mystdlib.Optics.Tambara.Combinators
+
+open Tamb
 
 class Cons (α β ς τ : Type u) where
   prism : Prism (α × ς) (β × τ) ς τ

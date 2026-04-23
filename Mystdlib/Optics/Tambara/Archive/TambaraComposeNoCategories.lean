@@ -1,11 +1,16 @@
-import Mystdlib.Optics.Tambara.Categories
-
-namespace Tamb
+import Mathlib.Control.Bifunctor
+import Mathlib.Control.Traversable.Basic
 
 class Profunctor (p : Type _ -> Type _ -> Type _) where
   map : (ς -> α) -> (β -> τ) -> p α β -> p ς τ
 
-set_option linter.dupNamespace false in
+
+
+structure ActionPair.{u ,v} (μ : Type u) where
+  left : μ -> Type v -> Type v
+  right : μ -> Type v -> Type v
+
+
 class Tamb (pair : ActionPair μ) (p : Type u -> Type u -> Type w)
   extends Profunctor p
   where
@@ -37,8 +42,8 @@ instance
         rw [this]
         exact inst.tambs (fin.pred (by grind))
 
-def ProfOptic.{w} {μ : Type v} (actions : List (ActionPair μ)) (α β ς τ : Type u) :=
-  (p : Type u -> Type u -> Type (max u w)) -> [Tambs actions p] -> p α β -> p ς τ
+def ProfOptic (μ : _) (actions : List (ActionPair μ)) (α β ς τ : Type _) :=
+  (p : _) -> [Tambs actions p] -> p α β -> p ς τ
 
 def ProfOptic.compose_aux
   (tambs : Tambs (l ++ l') p)
@@ -53,9 +58,9 @@ def ProfOptic.compose_aux
    (fst, snd)
 
 def ProfOptic.compose
-  (x : ProfOptic l δ ω ς τ)
-  (y : ProfOptic l' α β δ ω)
-  : ProfOptic (l ++ l') α β ς τ :=
+  (x : ProfOptic μ l δ ω ς τ)
+  (y : ProfOptic μ l' α β δ ω)
+  : ProfOptic μ (l ++ l') α β ς τ :=
   fun p tambs =>
     have := ProfOptic.compose_aux tambs
     have f := @x p ⟨fun i => this.fst.tambs i⟩
@@ -77,65 +82,78 @@ instance
         have thisb := inst'.tambs ⟨i - l.length, by grind⟩
         ⟨by rw [thisa]; exact thisb.tamb⟩
 
-
 inductive ExOptic
-  {μ : Type v}
+  (μ : _)
   (pair : ActionPair μ)
-  (α β ς τ : Type u)
-| mk {xμ : μ} : (ς -> pair.left xμ α) -> (pair.right xμ β -> τ) -> ExOptic pair α β ς τ
-
-def ExOptic.left
-  (x : ExOptic pair α β ς τ)
-  : ς -> Σxμ, pair.left xμ α
-  := match x with 
-  | .mk (xμ := xμ) l _ => (Sigma.mk xμ ·) ∘ l
-
-def ExOptic.right
-  {pair : ActionPair μ}
-  (x : ExOptic pair α β ς τ)
-  : Σxμ, pair.right xμ β -> τ
-  := match x with
-  | .mk (xμ := xμ) _ r => ⟨xμ, r⟩
+  (α β ς τ : Type _)
+| mk {xμ : μ} : (ς -> pair.left xμ α) -> (pair.right xμ β -> τ) -> ExOptic μ pair α β ς τ
 
 def ExOptic.toProfOptic
-  (x : ExOptic pair α β ς τ)
-  : ProfOptic [pair] α β ς τ :=
+  (x : ExOptic μ pair α β ς τ)
+  : ProfOptic μ [pair] α β ς τ :=
   match x with
   | .mk l r => fun _ inst =>
     inst.map l r ∘ (inst.tambs 0).tamb
 
-instance : Profunctor (ExOptic pair α β) where
+
+instance : Profunctor (ExOptic μ pair α β) where
   map := fun f g ⟨l, r⟩ => .mk (l ∘ f) (g ∘ r)
 
-abbrev TambOfExOptic_aux {M₀ : Type v} (M₁ : M₀ -> M₀ -> Type v) (O : M₀ -> M₀ -> M₀) (pair : ActionPair M₀) (α β : Type u) := ExOptic pair α β
+def Lens (α β ς τ : Type u) := ProfOptic (Type u) [⟨Prod, Prod⟩] α β ς τ
 
-instance 
-  {M₀ : Type v}
-  {α β : Type u}
-  {O : M₀ -> M₀ -> M₀}
-  {M₁ : M₀ -> M₀ -> Type v}
-  {pair : ActionPair M₀}
-  [inst : MonoidalActionPair pair M₁ O]
-  : Tamb pair (TambOfExOptic_aux M₁ O pair α β) where
-    tamb := fun ⟨l, r⟩ =>
-      ExOptic.mk 
-        (inst.left_ax.multiplicator.hom ∘ inst.left_ax.toBifunctor.map inst.cat.id l) 
-        (inst.right_ax.toBifunctor.map inst.cat.id r ∘ inst.right_ax.multiplicator.inv)
+def Lens.mk
+  (get : ς -> α)
+  (set : ς -> β -> τ)
+  : Lens α β ς τ
+  := fun {_} tambs =>
+    tambs.map (fun s => (s, get s)) (Function.uncurry set) ∘ (tambs.tambs 0).tamb
+
+def Lens' (α ς) := Lens α α ς ς
+
+def Prism (α β ς τ : Type u) := ProfOptic (Type u) [⟨Sum, Sum⟩] α β ς τ
+
+def Prism.mk
+  (build : β -> τ)
+  (matchfn : ς -> τ ⊕ α)
+  : Prism α β ς τ
+  := fun {_} tambs =>
+    tambs.map matchfn (Sum.elim id build) ∘ (tambs.tambs 0).tamb
+
+def Prism' (α ς) := Prism α α ς ς
+
+def App (C : (Type u -> Type v) -> Type w) :=
+  fun (σ : ΣF, C F) (α : _) => σ.fst α
+
+abbrev ExTraversal (α β ς τ) := ExOptic (ΣF, Traversable F) ⟨App Traversable, App Traversable⟩ α β ς τ
+
+def ExTraversal.mk
+  [Traversable F]
+  (f : ς -> F α)
+  (g : F β -> τ)
+  : ExTraversal α β ς τ 
+  := ExOptic.mk (xμ := ⟨F, inferInstance⟩) f g
+
+def Split ς α := List α × ς
+
+instance : Functor (Split ς) where
+  map := fun f (l, s) => (l.map f, s)
+
+instance : Traversable (Split.{u, u} ς) where
+  traverse := fun f (l, s) => Functor.map (flip Prod.mk s) (traverse f l)
+
+def Traversal (α β ς τ) := ProfOptic (ΣF, Traversable F) [⟨App Traversable, App Traversable⟩] α β ς τ
+
+def Traversal.mk
+  (f : ς -> List α × (List β -> τ))
+  : Traversal α β ς τ 
+  := ExOptic.toProfOptic (ExTraversal.mk (F := Split ς) (fun s => (f s |>.fst, s)) (fun (l, s) => f s |>.snd l))
+
+def Traversal' (α ς) := Traversal α α ς ς
 
 
-def ProfOptic.toExOptic
-  {α β ς τ : Type u}
-  {M₀ : Type v}
-  (pair : ActionPair M₀)
-  (M₁ : M₀ -> M₀ -> Type v)
-  (O)
-  [inst : MonoidalActionPair pair M₁ O]
-  (x : ProfOptic [pair] α β ς τ)
-  : ExOptic pair α β ς τ
-  := 
-   have := ExOptic.mk.{v, u} (α := α) (β := β) inst.left_ax.unitor.inv inst.right_ax.unitor.hom
-   have thisa := @x (ExOptic pair α β)
-   --x _ this
-   thisa this
-
-
+/- def Traversal.toExTraversal -/
+/-   (x : Traversal α β ς τ) -/
+/-   : ExTraversal α β ς τ -/
+/-   := -/
+/-     let : ExTraversal α β α β := _ -/
+/-     x _ this -/

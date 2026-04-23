@@ -1,8 +1,10 @@
 import Mystdlib.FunList
+import Mystdlib.Optics.Tambara.Traversal
 import Mathlib.Data.Tree.Basic
 import Mystdlib.Optics.Tambara.Tambara
 import Mystdlib.Optics.Tambara.Combinators
 
+namespace Tamb
 
 def fst {α β : Type} : Lens' α (α × β) :=
   .mk Prod.fst (fun (_, r) a => (a, r))
@@ -19,4 +21,5 @@ def Tree.extractInOrder : Tree α -> List α × (List α -> Tree α)
 
 def Tree.inOrderTraversal {α}: Traversal' α (Tree α) :=
   Traversal.mk Tree.extractInOrder
+
 

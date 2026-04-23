@@ -1,3 +1,5 @@
+import Mathlib.Control.Fold
+import Mathlib.Control.Traversable.Basic
 
 namespace Foldable
 
@@ -19,6 +21,7 @@ instance : Monoid (Array α) where
 instance : Monoid (α -> α) where
   mempty := id
   
+set_option linter.dupNamespace false in
 class Foldable (t : Type -> Type) where
   foldMap [Monoid m] : (α -> m) -> t α -> m :=
     fun f xtα => foldr (Append.append ∘ f) mempty xtα
@@ -62,5 +65,17 @@ instance : Filterable List where
 instance : Filterable Array where
   filterMap := Array.filterMap
   reduceOption := Array.reduceOption
+
+
+instance [Monoid m] : One m where
+  one := Monoid.mempty
+
+instance [Monoid m] : Mul m where
+  mul := Append.append
+
+instance [Traversable t] : Foldable t where
+  foldMap := Traversable.foldMap
+  foldr := Traversable.foldr
+  foldl := Traversable.foldl
 
 
