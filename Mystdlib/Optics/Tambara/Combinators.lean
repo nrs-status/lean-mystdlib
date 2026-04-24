@@ -53,6 +53,10 @@ instance : Tamb ⟨Sum.{u,u}, Sum⟩ (fun x _ => x -> Option α) where
 instance : Tamb ⟨Prod.{u,u}, Prod⟩ (fun x _ => x -> Option α) where
   tamb := fun f x => f x.snd
 
+instance : Tamb ⟨Affine, Affine⟩ (fun x _ => x -> Option α) where
+  tamb := fun f x => x.elim (fun _ => .none) (f ∘ Prod.snd)
+
+
 def preview
   (x : ProfOptic l α β ς τ)
   [Tambs l (fun x _ => x -> Option α)]
@@ -71,6 +75,9 @@ instance : Tamb ⟨Prod.{u, u}, Prod⟩ (Setting α β) where
 instance : Tamb ⟨Sum.{u,u}, Sum⟩ (Setting α β) where
   tamb := fun f g x => x.elim .inl (.inr ∘ f g)
 
+instance : Tamb ⟨Affine, Affine⟩ (Setting α β) where
+  tamb := fun f g => Sum.elim .inl (fun x => .inr (x.fst, f g x.snd))
+
 def set
   (x : ProfOptic l α β ς τ)
   [Tambs l (Setting α β)]
@@ -88,10 +95,11 @@ instance : Tamb ⟨Prod.{u,u}, Prod⟩ (Replacing α β) where
 instance : Tamb ⟨Sum.{u,u}, Sum⟩ (Replacing α β) where
   tamb := fun u f x => x.casesOn Sum.inl (Sum.inr ∘ u f)
 
-
 instance : Tamb ⟨App Traversable, App Traversable⟩ (Replacing α β) where
-  tamb := by simp [Replacing, App]; exact
-    fun {_ _ xμ} f g => xμ.snd.toFunctor.map (f g)
+  tamb := fun {_ _ xμ} f g => xμ.snd.toFunctor.map (f g)
+
+instance : Tamb ⟨Affine, Affine⟩ (Replacing α β) where
+  tamb := fun f g => Sum.elim .inl (fun x => .inr (x.fst, f g x.snd))
 
 def over 
   (x : ProfOptic l α β ς τ)
@@ -106,8 +114,17 @@ instance : Profunctor (fun s t => s -> t ⊕ α) where
 instance : Tamb ⟨Sum, Sum⟩ (fun (s t : Type u) => s -> t ⊕ α) where
   tamb := fun f => Sum.elim (fun xm => .inl (.inl xm)) (fun a => (f a).elim (fun b => .inl (.inr b)) .inr)
 
+instance : Tamb ⟨Affine, Affine⟩ (fun (s t : Type u) => s -> t ⊕ α) where
+  tamb := fun f => Sum.elim 
+    (fun x => (.inl (.inl x))) 
+    (fun (fst, snd) => f snd |>.elim 
+      (fun y => .inl (.inr (fst, y))) 
+      .inr)
+
 def matching
   (x : ProfOptic l α β ς τ)
   [Tambs l (fun (s t : Type u) => s -> t ⊕ α)]
   : ς -> τ ⊕ α
   := x (fun s t => s -> t ⊕ α) .inr
+
+

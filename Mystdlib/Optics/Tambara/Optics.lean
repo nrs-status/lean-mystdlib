@@ -83,6 +83,43 @@ def Traversal.mk
 
 def Traversal' (α ς) := Traversal α α ς ς
 
+-- not sure which version of AffineTraversal is the correct one; defining both
+
+def AffineTraversal (α β ς τ : Type u) := ProfOptic [⟨Prod, Prod⟩, ⟨Sum, Sum⟩] α β ς τ
+
+def AffineTraversal.mk
+  {α β ς τ : Type u}
+  (matchfn : ς -> τ ⊕ α)
+  (set : ς -> β -> τ)
+  : AffineTraversal α β ς τ
+  := fun _ inst pab =>
+    have y₀ := (inst.tambs 1).tamb (xμ := τ) pab
+    have y₁ := (inst.tambs 0).tamb (xμ := ς) y₀
+    have f := fun (s : ς) => (s, matchfn s)
+    have g := fun (pair : ς × (τ ⊕ β)) => pair.snd.elim id (set pair.fst)
+    inst.map f g y₁
+
+def AffineTraversal' (α ς : Type u) := AffineTraversal α α ς ς
+
+abbrev Affine (xμ : Type u × Type u) (α : Type u) := xμ.fst ⊕ (xμ.snd × α)
+
+def AffineTraversalb (α β ς τ : Type u) := ProfOptic [⟨Affine, Affine⟩] α β ς τ
+
+def AffineTraversalb.mk
+  {α β ς τ : Type u}
+  (matchfn : ς -> τ ⊕ α)
+  (set : ς -> β -> τ)
+  : AffineTraversalb α β ς τ
+  := fun _ inst pab =>
+    inst.map 
+      (fun s => (matchfn s).elim .inl (fun a => .inr (s, a))) 
+      (Sum.elim id (Function.uncurry set)) 
+      ((inst.tambs 0).tamb (xμ := (τ, ς)) pab)
+
+def AffineTraversalb' (α ς : Type u) := AffineTraversalb α α ς ς
+
+
+
 -- Van Laarhoven encoding
 
 def LensVL (α β ς τ) := (F : _) -> [Functor F] -> (α -> F β) -> ς -> F τ
@@ -98,3 +135,7 @@ def Lens.ofVL
   : Lens α β ς τ
   := fun _ inst =>
     inst.map ((fun ⟨l, r⟩ => (l, r)) ∘ x _ (PStore.mk id)) (fun (f, b) => f b) ∘ (inst.tambs 0).tamb
+
+def AffTraversalVL (α β ς τ) := (F : _) -> [Functor F] -> [Pure F] -> (α -> F β) -> ς -> F τ
+
+

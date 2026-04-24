@@ -1,12 +1,14 @@
 import Mystdlib.Optics.Tambara.Optics
 import Mystdlib.Optics.Tambara.Combinators
+import Mystdlib.Optics.Tambara.Tuple
 
 open Tamb
 
 class Cons (α β ς τ : Type u) where
   prism : Prism (α × ς) (β × τ) ς τ
 
-abbrev Cons' (α ς) := Cons α α ς ς
+class Cons' (α : outParam (Type u)) (ς : Type u) where
+  prism : Prism (α × ς) (α × ς) ς ς
 
 instance : Cons' α (List α) where
   prism := Prism.mk 
@@ -18,13 +20,37 @@ instance : Cons' α (Array α) where
     (fun (a, as) => #[a] ++ as)
     (fun ar => if h : ar.isEmpty then .inl #[] else .inr (ar[0]'(by grind), ar.drop 1))
 
-def cons [inst : Cons' α ς] : α -> ς -> ς :=
+
+def cons 
+  {α ς : Type u}
+  [inst : Cons' α ς] : α -> ς -> ς :=
   Function.curry (review inst.prism)
+
+def head
+  {α ς : Type u}
+  [inst : Cons' α ς]
+  := inst.prism.compose (tuple' 0)
+
+def head_affinetraversalb -- for educational purposes
+  {α ς : Type u}
+  [inst : Cons' α ς]
+  : AffineTraversalb' α ς 
+  := AffineTraversalb.mk
+    (fun s => match matching inst.prism s with
+      | .inl x => .inl x
+      | .inr x => .inr x.fst)
+    (flip cons)
+
+def tail
+  {α ς : Type u}
+  [inst : Cons' α ς]
+  := inst.prism.compose (tuple' 1)
 
 class Snoc (α β ς τ : Type u) where
   prism : Prism (ς × α) (τ × β) ς τ
 
-abbrev Snoc' (α ς) := Snoc α α ς ς
+class Snoc' (α : outParam (Type u)) (ς : Type u) where
+  prism : Prism (ς × α) (ς × α) ς ς
 
 instance : Snoc' α (List α) where
   prism := Prism.mk
@@ -39,5 +65,12 @@ instance : Snoc' α (Array α) where
 def snoc [inst : Snoc' α ς] : ς -> α -> ς :=
   Function.curry (review inst.prism)
 
+def init
+  [inst : Snoc' α ς]
+  := inst.prism.compose (tuple' 0)
+
+def last
+  [inst : Snoc' α ς]
+  := inst.prism.compose (tuple' 1)
 
 
