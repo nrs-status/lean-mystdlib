@@ -99,4 +99,3 @@ def final
   have thisa := last (α := α) (ς := List α)
   this.compose thisa
 
-
