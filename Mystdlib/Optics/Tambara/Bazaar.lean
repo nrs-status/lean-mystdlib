@@ -55,6 +55,8 @@ def Baz.sold
 
 def TraversalVL (α β ς τ) := (F : _) -> [Applicative F] -> (α -> F β) -> ς -> F τ
 
+def TraversalVL' (α ς) := TraversalVL α α ς ς
+
 namespace Tamb 
 
 def TraversalVL.toTraversal
