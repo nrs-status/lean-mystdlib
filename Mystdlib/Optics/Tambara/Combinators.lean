@@ -56,7 +56,6 @@ instance : Tamb ⟨Prod.{u,u}, Prod⟩ (fun x _ => x -> Option α) where
 instance : Tamb ⟨Affine, Affine⟩ (fun x _ => x -> Option α) where
   tamb := fun f x => x.elim (fun _ => .none) (f ∘ Prod.snd)
 
-
 def preview
   (x : ProfOptic l α β ς τ)
   [Tambs l (fun x _ => x -> Option α)]
@@ -127,4 +126,10 @@ def matching
   : ς -> τ ⊕ α
   := x (fun s t => s -> t ⊕ α) .inr
 
+-- traversal downcast
 
+instance {p : Type u -> Type _ -> Type _} [inst : Tamb ⟨App Traversable, App Traversable⟩ p] : Tamb ⟨Sum, Sum⟩ p where
+  tamb := fun {α β μ} => @inst.tamb α β ⟨fun x => μ ⊕ x, inferInstance⟩
+
+instance {p : Type u -> Type _ -> Type _} [inst : Tamb ⟨App Traversable, App Traversable⟩ p] : Tamb ⟨Prod, Prod⟩ p where
+  tamb := fun {α β μ} => @inst.tamb α β ⟨fun x => μ × x, inferInstance⟩
