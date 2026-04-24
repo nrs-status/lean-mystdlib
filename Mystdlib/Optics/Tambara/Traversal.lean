@@ -2,6 +2,8 @@ import Mystdlib.Optics.Tambara.Tambara
 import Mystdlib.Optics.Tambara.Optics
 import Mystdlib.Optics.Tambara.Combinators
 import Mathlib.Control.Traversable.Basic
+import Mystdlib.Optics.Tambara.Cons
+import Mystdlib.Optics.Tambara.Bazaar
 
 namespace Tamb
 
@@ -84,4 +86,17 @@ def traversed
   : Traversal α β (F α) (F β)
   :=
   Traversal.mk' (F := F) id id
+
+def traversed'
+  [Traversable F]
+  : Traversal' α (F α)
+  := traversed
+
+def final
+  (x : Traversal' α ς)
+  := 
+  have := partsOf x
+  have thisa := last (α := α) (ς := List α)
+  this.compose thisa
+
 

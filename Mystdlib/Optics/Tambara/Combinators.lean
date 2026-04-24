@@ -56,6 +56,14 @@ instance : Tamb ⟨Prod.{u,u}, Prod⟩ (fun x _ => x -> Option α) where
 instance : Tamb ⟨Affine, Affine⟩ (fun x _ => x -> Option α) where
   tamb := fun f x => x.elim (fun _ => .none) (f ∘ Prod.snd)
 
+instance : Tamb ⟨App Traversable, App Traversable⟩ (fun x _ => x -> Option α) where
+  tamb := fun {_ _ xμ} f x =>
+  have := xμ.snd
+  -- Monad.join $ this (fun x y => x.elim (f y) (Option.some ∘ Option.some)) .none x -- previous version
+  --Monad.join $ this (fun x y => f y |>.elim (.some x) (Option.some ∘ Option.some)) .none x -- reversed direction
+  Traversable.foldlm (t := xμ.fst) (m := Id)  
+    (fun x => x.elim f fun a _ => .some a) .none x
+
 def preview
   (x : ProfOptic l α β ς τ)
   [Tambs l (fun x _ => x -> Option α)]
@@ -126,6 +134,7 @@ def matching
   : ς -> τ ⊕ α
   := x (fun s t => s -> t ⊕ α) .inr
 
+
 -- traversal downcast
 
 instance {p : Type u -> Type _ -> Type _} [inst : Tamb ⟨App Traversable, App Traversable⟩ p] : Tamb ⟨Sum, Sum⟩ p where
@@ -133,3 +142,5 @@ instance {p : Type u -> Type _ -> Type _} [inst : Tamb ⟨App Traversable, App T
 
 instance {p : Type u -> Type _ -> Type _} [inst : Tamb ⟨App Traversable, App Traversable⟩ p] : Tamb ⟨Prod, Prod⟩ p where
   tamb := fun {α β μ} => @inst.tamb α β ⟨fun x => μ × x, inferInstance⟩
+
+
