@@ -79,3 +79,9 @@ def partsOf
       have := (Prod.fst ∘ Id.run) ∘ this.run
       Functor.map this (f (toListOf x s))
       
+def traversed
+  [Traversable F]
+  : Traversal α β (F α) (F β)
+  :=
+  Traversal.mk' (F := F) id id
+

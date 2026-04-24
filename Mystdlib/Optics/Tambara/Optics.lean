@@ -2,6 +2,7 @@ import Mystdlib.Foldable
 import Mathlib.Control.Traversable.Basic
 import Mystdlib.Optics.Tambara.Tambara
 import Mystdlib.Optics.Tambara.CategoriesInstances
+import Mystdlib.Traversable
 
 namespace Tamb
 
@@ -74,12 +75,17 @@ instance : Traversable (Split.{u, u} ς) where
 
 def Traversal  (α β ς τ : Type u) := ProfOptic [⟨App Traversable, App Traversable⟩] α β ς τ
 
-
+def Traversal.mk'
+  [Traversable F]
+  (f : ς -> F α)
+  (g : F β -> τ)
+  : Traversal α β ς τ
+  := ExOptic.toProfOptic (ExTraversal.mk f g)
 
 def Traversal.mk
   (f : ς -> List α × (List β -> τ))
   : Traversal α β ς τ 
-  := ExOptic.toProfOptic (ExTraversal.mk (F := Split ς) (fun s => (f s |>.fst, s)) (fun (l, s) => f s |>.snd l))
+  := Traversal.mk' (F := Split ς) (fun s => (f s |>.fst, s)) (fun (l, s) => f s |>.snd l)
 
 def Traversal' (α ς) := Traversal α α ς ς
 
@@ -137,5 +143,9 @@ def Lens.ofVL
     inst.map ((fun ⟨l, r⟩ => (l, r)) ∘ x _ (PStore.mk id)) (fun (f, b) => f b) ∘ (inst.tambs 0).tamb
 
 def AffTraversalVL (α β ς τ) := (F : _) -> [Functor F] -> [Pure F] -> (α -> F β) -> ς -> F τ
+
+
+
+
 
 
