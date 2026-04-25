@@ -134,8 +134,7 @@ def ProfOptic.toExOptic
   : ExOptic pair α β ς τ
   := 
    have := ExOptic.mk.{v, u} (α := α) (β := β) inst.left_ax.unitor.inv inst.right_ax.unitor.hom
-   have thisa := @x (ExOptic pair α β)
-   --x _ this
-   thisa this
+   have f := @x (ExOptic pair α β)
+   f this
 
 

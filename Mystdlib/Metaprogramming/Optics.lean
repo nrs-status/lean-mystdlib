@@ -33,9 +33,11 @@ def app_prism : Prism' (Syntax × Array Syntax) Syntax :=
     | `($head $body*) => .inr (head, body)
     | x => .inl x
 
-/- def app_traverseVL : TraversalVL' Syntax Syntax := -/
-/-   fun F _ f x => match matching app_prism x with -/
-/-   | .inl x => f x -/
-/-   | .inr x => (fun c k => Lean.Syntax.mkApp (.mk c) (.mk k)) <$> _ <*> app_traverseVL F f _ -/
+partial def app_traverseVL : TraversalVL' Syntax Syntax :=
+  fun F _ f x => match matching app_prism x with
+  | .inl x => f x
+  | .inr (head, args) => 
+    (fun c k => Lean.Syntax.mkApp (.mk c) (.mk k)) <$> f head <*> args.traverse (app_traverseVL F f)
+
 
 
