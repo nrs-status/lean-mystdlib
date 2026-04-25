@@ -4,11 +4,12 @@ import Mystdlib.Metaprogramming.General
 open Lean
 open Tamb
 
+
 def Syntax.mkArrow : Syntax -> Syntax -> Syntax :=
   fun head body =>
   MacroM.run `($(.mk head) -> $(.mk body)) |>.elim .missing TSyntax.raw
 
-def arrow_prism_aux : Syntax -> Syntax ⊕ Syntax × Syntax
+def arrow_prism_match : Syntax -> Syntax ⊕ Syntax × Syntax
 | `($x -> $y) => .inr (x, y)
 | `(Lean.Parser.Term.depArrow| $x -> $y) => .inr (x, y)
 | x => .inl x
@@ -16,7 +17,7 @@ def arrow_prism_aux : Syntax -> Syntax ⊕ Syntax × Syntax
 def arrow_prism : Prism' (Syntax × Syntax) Syntax :=
   .mk 
     (Function.uncurry Syntax.mkArrow)
-    arrow_prism_aux
+    arrow_prism_match
 
 partial def arrow_traverseVL : TraversalVL' Syntax Syntax  :=
   fun F _ f x => match matching arrow_prism x with
@@ -26,6 +27,26 @@ partial def arrow_traverseVL : TraversalVL' Syntax Syntax  :=
 
 partial def arrow_traverse := arrow_traverseVL.toTraversal
   
+def arrow_snoc := Function.curry (review arrow_prism)
+
+/- def mything := arrow_traverseVL Id _ _ -/
+
+partial def arrow_cons_match (accum : List Syntax) : Syntax -> Syntax ⊕ Syntax × Syntax 
+| `($x -> $y) => match matching arrow_prism y with
+  | .inl y' => .inr (x, y)
+  | .inr y' => arrow_cons_match (x :: accum) y
+| `(Lean.Parser.Term.depArrow|$x -> $y) => match matching arrow_prism y with
+  | .inl y' => .inr (x, y)
+  | .inr y' => arrow_cons_match (x :: accum) y
+| x => .inl x
+
+--def arrow_cons_build (parts : Syntax ×
+
+#run_elab
+  let myarrow <- `(Nat -> Unit -> Nat)
+  let mytype <- `(List String)
+  dbg_trace <- Lean.PrettyPrinter.formatTerm (arrow_snoc myarrow mytype)
+
 def app_prism : Prism' (Syntax × Array Syntax) Syntax :=
   .mk
     (Function.uncurry (fun x y => Lean.Syntax.mkApp (.mk x) (.mk y)))

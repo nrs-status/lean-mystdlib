@@ -20,10 +20,15 @@ instance : Monoid (Array α) where
 
 instance : Monoid (α -> α) where
   mempty := id
+
+instance [One m] [Mul m] : Monoid m where
+  append := Mul.mul
+  mconcat := List.foldl Mul.mul One.one
+  mempty := One.one
   
 set_option linter.dupNamespace false in
-class Foldable (t : Type -> Type) where
-  foldMap [Monoid m] : (α -> m) -> t α -> m :=
+class Foldable (t : Type u -> Type v) where
+  foldMap {m : Type v} [Monoid m] : (α -> m) -> t α -> m :=
     fun f xtα => foldr (Append.append ∘ f) mempty xtα
   foldr : (α -> β -> β) -> β -> t α -> β :=
     fun f init xs => foldl (β := β -> β) (fun k x z => k (f x z)) id xs init
@@ -39,6 +44,13 @@ instance : Foldable Array where
   foldr := Array.foldr
   foldl := Array.foldl
 
+/- is this the correct instance? -/
+instance : Foldable (Functor.Const m) where
+  foldMap := fun _ _ => mempty
+  foldl := fun _ b _ => b
+
+instance : Traversable (Functor.Const m) where
+  traverse := fun _ xm => pure xm
 
 def flatMap [Foldable t] (f : α -> Array β) (as : t α) : Array β :=
   Foldable.foldl (fun bs a => bs ++ f a) ∅ as

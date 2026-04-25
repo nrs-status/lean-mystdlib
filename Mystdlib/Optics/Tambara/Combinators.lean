@@ -1,3 +1,4 @@
+import Mystdlib.Foldable
 import Mathlib.Control.Traversable.Basic
 import Mystdlib.Optics.Tambara.Tambara
 import Mystdlib.Optics.Tambara.Optics
@@ -134,7 +135,6 @@ def matching
   : ς -> τ ⊕ α
   := x (fun s t => s -> t ⊕ α) .inr
 
-
 -- traversal downcast
 
 instance {p : Type u -> Type _ -> Type _} [inst : Tamb ⟨App Traversable, App Traversable⟩ p] : Tamb ⟨Sum, Sum⟩ p where
@@ -142,5 +142,6 @@ instance {p : Type u -> Type _ -> Type _} [inst : Tamb ⟨App Traversable, App T
 
 instance {p : Type u -> Type _ -> Type _} [inst : Tamb ⟨App Traversable, App Traversable⟩ p] : Tamb ⟨Prod, Prod⟩ p where
   tamb := fun {α β μ} => @inst.tamb α β ⟨fun x => μ × x, inferInstance⟩
+
 
 

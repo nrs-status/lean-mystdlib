@@ -70,4 +70,18 @@ def Tree.extractInOrder : Tree α -> List α × (List α -> Tree α)
 def Tree.inOrderTraversal {α}: Traversal' α (Tree α) :=
   Traversal.mk Tree.extractInOrder
 
+/-
+def mything : List α -> Tree α
+| .nil => .nil
+| .cons x xs => .node x .nil (mything xs)
 
+
+def neothing : List α -> Tree α :=
+  Traversable.foldl (fun t a => .node a .nil t) .nil
+
+def neothing' : List α -> Tree α :=
+  Traversable.foldr (fun a t => .node a .nil t) .nil
+#eval neothing [1, 2, 3, 4]
+#eval neothing' [1, 2, 3, 4]
+#eval mything [1, 2, 3, 4]
+-/
