@@ -71,35 +71,3 @@ def Tree.inOrderTraversal {α}: Traversal' α (Tree α) :=
   Traversal.mk Tree.extractInOrder
 
 
-
-def iseven := is (fun (n : Nat) => n % 2 = 0)
-
-def mything := (traversed' (F := List) (α := Nat))
-
-
-/--
-info: def Tamb.Traversal.{u, u_1} : Type u →
-  Type u → Type u → Type u → Type (max (max (max (u + 1) (u_1 + 1)) u u_1) (u + 1)) :=
-fun α β ς τ => ProfOptic [{ left := App Traversable, right := App Traversable }] α β ς τ
--/
-#guard_msgs in
-#print Traversal
-
-/--
-info: def Tamb.Prism.{u, u_1} : Type u → Type u → Type u → Type u → Type (max (max (max (u + 1) (u_1 + 1)) u u_1) (u + 1)) :=
-fun α β ς τ => ProfOptic [{ left := Sum, right := Sum }] α β ς τ
--/
-#guard_msgs in 
-#print Prism
-
-/--
-info: def Tamb.ProfOptic.{w, v, u} : {μ : Type v} →
-  List (ActionPair μ) →
-    Type u → Type u → Type u → Type u → Type (max (max (max (max (u + 1) (w + 1)) v) u w) (u + 1)) :=
-fun {μ} actions α β ς τ => (p : Type u → Type u → Type (max u w)) → [Tambs actions p] → p α β → p ς τ
--/
-#guard_msgs in
-#print ProfOptic
-
-
-

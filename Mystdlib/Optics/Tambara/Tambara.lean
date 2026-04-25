@@ -11,33 +11,35 @@ class Tamb (pair : ActionPair μ) (p : Type u -> Type u -> Type w)
   where
   tamb {xμ : μ} : p α β  -> p (pair.left xμ α) (pair.right xμ β)
 
-class Tambs (actions : List (ActionPair μ)) (p : Type u -> Type u -> Type w)  
+class Tambs (actions : List (Σμ, ActionPair μ)) (p : Type u -> Type u -> Type w)  
   extends Profunctor p
   where
-    tambs : (i : Fin actions.length) -> Tamb actions[i] p
+    tambs : (i : Fin actions.length) -> Tamb actions[i].snd p
 
-instance [inst : Tamb pair p] : Tambs [pair] p where
+instance [inst : Tamb (μ := μ) pair p] : Tambs [⟨μ, pair⟩] p where
   tambs := fun | 0 => by dsimp; infer_instance
 
 instance 
   [inst : Tambs (pair :: axs) p] 
-  [inst' : Tamb pair' p] 
-  : Tambs (pair :: pair' :: axs) p where
+  [inst' : Tamb (μ := μ) pair' p] 
+  : Tambs (pair :: ⟨μ, pair'⟩ :: axs) p where
     tambs := fun fin =>
-      if h : fin.val = 0 then by
+      let (eq := fineq) ⟨val, lt⟩ := fin
+      if h : val = 0 then by
         have := inst.tambs ⟨0, by grind⟩
         dsimp at this
-        simp [h]
+        subst h
+        simp
         exact this
-      else if h' : fin.val = 1 then by
-        simp [h']
+      else if h' : val = 1 then by
+        subst h'
         exact inst'
       else by
-        have : (pair :: pair' :: axs)[fin] = (pair :: axs)[fin.pred (by simp_all)] := by grind
-        rw [this]
+        have : (pair :: ⟨μ, pair'⟩ :: axs)[fin] = (pair :: axs)[fin.pred (by simp_all)] := by grind
+        rw [<- fineq, this]
         exact inst.tambs (fin.pred (by grind))
 
-def ProfOptic.{w} {μ : Type v} (actions : List (ActionPair μ)) (α β ς τ : Type u) :=
+def ProfOptic.{w} (actions : List (Σμ, ActionPair μ)) (α β ς τ : Type u) :=
   (p : Type u -> Type u -> Type (max u w)) -> [Tambs actions p] -> p α β -> p ς τ
 
 def ProfOptic.compose_aux
@@ -98,8 +100,8 @@ def ExOptic.right
   | .mk (xμ := xμ) _ r => ⟨xμ, r⟩
 
 def ExOptic.toProfOptic
-  (x : ExOptic pair α β ς τ)
-  : ProfOptic [pair] α β ς τ :=
+  (x : ExOptic (μ := μ) pair α β ς τ)
+  : ProfOptic [⟨μ, pair⟩] α β ς τ :=
   match x with
   | .mk l r => fun _ inst =>
     inst.map l r ∘ (inst.tambs 0).tamb
@@ -130,7 +132,7 @@ def ProfOptic.toExOptic
   (M₁ : M₀ -> M₀ -> Type v)
   (O)
   [inst : MonoidalActionPair pair M₁ O]
-  (x : ProfOptic [pair] α β ς τ)
+  (x : ProfOptic [⟨M₀, pair⟩] α β ς τ)
   : ExOptic pair α β ς τ
   := 
    have := ExOptic.mk.{v, u} (α := α) (β := β) inst.left_ax.unitor.inv inst.right_ax.unitor.hom

@@ -40,4 +40,51 @@ partial def app_traverseVL : TraversalVL' Syntax Syntax :=
     (fun c k => Lean.Syntax.mkApp (.mk c) (.mk k)) <$> f head <*> args.traverse (app_traverseVL F f)
 
 
+/-
+inductive BracketedBinder
+| explicit
+  (lhs : TSyntaxArray [`ident, `Lean.Parser.Term.hole])
+  (h : ¬ lhs.isEmpty)
+  (rhs : Term)
+| implicit
+  (lhs : TSyntaxArray [`ident, `Lean.Parser.Term.hole])
+  (h : ¬ lhs.isEmpty)
+  (rhs : Term)
+| strict_implicit
+  (lhs : TSyntaxArray [`ident, `Lean.Parser.Term.hole])
+  (h : ¬ lhs.isEmpty)
+  (rhs : Term)
+| instance_implicit
+  (lhs : Option Ident)
+  (rhs : Term)
+deriving Repr
+
+def Lean.Syntax.toBracketedBinder : Syntax -> Option BracketedBinder
+| `(bracketedBinder|($lhs* : $rhs)) =>
+  if h : lhs.isEmpty
+  then .none
+  else .some <| .explicit lhs (by grind) rhs
+| `(bracketedBinder|{$lhs* : $rhs}) =>
+  if h : lhs.isEmpty
+  then .none
+  else .some <| .implicit lhs (by grind) rhs
+| `(bracketedBinder|{{$lhs* : $rhs}}) =>
+  if h : lhs.isEmpty
+  then .none
+  else .some <| .strict_implicit lhs (by grind) rhs
+| `(bracketedBinder|[$lhs : $rhs]) => .some <| .instance_implicit lhs rhs
+| `(bracketedBinder|[$x]) => .some <| .instance_implicit .none x
+| _ => .none
+
+def BracketedBinder.toStx : BracketedBinder -> MacroM Syntax
+| .explicit lhs _ rhs => `(bracketedBinder|($lhs* : $rhs))
+| .implicit lhs _ rhs => `(bracketedBinder|{$lhs* : $rhs})
+| .strict_implicit lhs _ rhs => `(bracketedBinder|{{$lhs* : $rhs}})
+| .instance_implicit lhs rhs => match lhs with
+  | .some lhs' => `(bracketedBinder| [$lhs' : $rhs])
+  | .none => `(bracketedBinder| [$rhs])
+-/
+
+def bracketedBinder : Prism' (Syntax × Syntax) Syntax :=
+  .mk _ _
 

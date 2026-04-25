@@ -16,15 +16,15 @@ def ExGetter.mk
   : ExGetter (μ := μ) α ς
   := ExOptic.mk (xμ := xμ) get id
 
-def Getter (α ς) := ProfOptic (μ := PUnit) [⟨fun _ x => x, fun _ _ => PUnit⟩] α PUnit ς PUnit
+def Getter (μ α ς) := ProfOptic  [Sigma.mk μ ⟨fun _ x => x, fun _ _ => PUnit⟩] α PUnit ς PUnit
 
 def Getter.mk
   (f : ς -> α)
-  : Getter α ς
+  : Getter PUnit α ς
   := ExOptic.toProfOptic (ExGetter.mk .unit f)
 
 
-def Fold (α ς) := ProfOptic [⟨App Foldable, App Foldable⟩] α Unit ς Unit 
+def Fold (α ς) := ProfOptic [Sigma.mk _ ⟨App Foldable, App Foldable⟩] α Unit ς Unit 
 
 def Fold.mk
   [Foldable F]
@@ -33,7 +33,7 @@ def Fold.mk
   := ExOptic.toProfOptic (.mk (xμ := ⟨F, inferInstance⟩) f (Foldable.foldl (fun _ _ => .unit) .unit))
 
 
-def Lens (α β ς τ : Type u) := ProfOptic [⟨Prod, Prod⟩] α β ς τ
+def Lens (α β ς τ : Type u) := ProfOptic [Sigma.mk _ ⟨Prod, Prod⟩] α β ς τ
 
 def Lens.mk
   (get : ς -> α)
@@ -43,7 +43,7 @@ def Lens.mk
 
 def Lens' (α ς) := Lens α α ς ς
 
-def Prism (α β ς τ : Type u) := ProfOptic [⟨Sum, Sum⟩] α β ς τ
+def Prism (α β ς τ : Type u) := ProfOptic [Sigma.mk _ ⟨Sum, Sum⟩] α β ς τ
 
 def ExPrism (α β ς τ : Type u) := ExOptic ⟨Sum, Sum⟩ α β ς τ
 
@@ -73,7 +73,7 @@ instance : Functor (Split ς) where
 instance : Traversable (Split.{u, u} ς) where
   traverse := fun f (l, s) => Functor.map (flip Prod.mk s) (traverse f l)
 
-def Traversal  (α β ς τ : Type u) := ProfOptic [⟨App Traversable, App Traversable⟩] α β ς τ
+def Traversal  (α β ς τ : Type u) := ProfOptic [Sigma.mk _ ⟨App Traversable, App Traversable⟩] α β ς τ
 
 def Traversal.mk'
   [Traversable F]
@@ -91,7 +91,7 @@ def Traversal' (α ς) := Traversal α α ς ς
 
 -- not sure which version of AffineTraversal is the correct one; defining both
 
-def AffineTraversal (α β ς τ : Type u) := ProfOptic [⟨Prod, Prod⟩, ⟨Sum, Sum⟩] α β ς τ
+def AffineTraversal (α β ς τ : Type u) := ProfOptic [Sigma.mk _ ⟨Prod, Prod⟩, Sigma.mk _ ⟨Sum, Sum⟩] α β ς τ
 
 def AffineTraversal.mk
   {α β ς τ : Type u}
@@ -109,7 +109,7 @@ def AffineTraversal' (α ς : Type u) := AffineTraversal α α ς ς
 
 abbrev Affine (xμ : Type u × Type u) (α : Type u) := xμ.fst ⊕ (xμ.snd × α)
 
-def AffineTraversalb (α β ς τ : Type u) := ProfOptic [⟨Affine, Affine⟩] α β ς τ
+def AffineTraversalb (α β ς τ : Type u) := ProfOptic [Sigma.mk _ ⟨Affine, Affine⟩] α β ς τ
 
 def AffineTraversalb.mk
   {α β ς τ : Type u}
