@@ -5,11 +5,35 @@ import Mystdlib.Optics.Tambara.Combinators
 
 namespace Tamb
 
+instance {ς τ γ : Type u} : Profunctor (fun α β => (ς -> α) -> (ς -> β -> τ) -> γ) where
+  map := fun f g h p q => h (f ∘ p) ((fun k => k ∘ g) ∘ q)
+
+instance  {ς τ γ : Type u} : Tamb ⟨Prod, Prod⟩ (fun (α β : Type u) => (ς -> α) -> (ς -> β -> τ) -> γ) where
+  tamb := fun f x =>
+    fun g => f (Prod.snd ∘ x) (fun s b => g s (x s |>.fst, b))
+
+def withLens 
+  (x : Lens α β ς τ)
+  (f : (ς -> α) -> (ς -> β -> τ) -> γ)
+  : γ
+  := x (fun α β => (ς -> α) -> (ς -> β -> τ) -> γ) f id (fun _ => id)
+
+/- def passthrough -/
+/-   (x : Lens α β ς τ) -/
+/-   (f : α -> β) -/
+/-   : ς -> β × τ -/
+/-   :=  -/
+/-     have := x (· -> ·) f -/
+/-     have thisa := view x -/
+/-     _ -/
+
 def fst {α β : Type u} : Lens' α (α × β) :=
   .mk Prod.fst (fun (_, r) a => (a, r))
 
 def snd {α β : Type u} : Lens' β (α × β) :=
   .mk Prod.snd (fun (l, _) b => (l, b))
+
+--def parallel : Lens α β ς τ -> Lens α' β' ς' τ' -> 
 
 def left : Prism' α (α ⊕ β) :=
   .mk .inl (Sum.elim .inr (fun b => .inl (.inr b)))
