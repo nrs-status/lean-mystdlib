@@ -1,5 +1,7 @@
 import Lean
 
+export Function (curry uncurry)
+
 instance [Inhabited x] : Inhabited (x ⊕ y) where
   default := .inl default
 
