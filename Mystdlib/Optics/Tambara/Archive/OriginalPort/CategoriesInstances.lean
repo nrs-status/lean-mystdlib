@@ -1,6 +1,6 @@
 import Mystdlib.General
+import Mystdlib.Traversable
 import Mystdlib.Optics.Tambara.Archive.OriginalPort.Categories
-import Mathlib.Control.Traversable.Basic
 
 
 instance : Category (Type u) (· -> ·) where
