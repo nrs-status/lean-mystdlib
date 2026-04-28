@@ -3,13 +3,13 @@ import Mystdlib.Optics.Tambara.Categories
 namespace Tamb
 
 class Profunctor (p : Type _ -> Type _ -> Type _) where
-  map {α β ς τ}  : (ς -> α) -> (β -> τ) -> p α β -> p ς τ
+  map : (ς -> α) -> (β -> τ) -> p α β -> p ς τ
 
 set_option linter.dupNamespace false in
 class Tamb (pair : ActionPair μ) (p : Type u -> Type u -> Type w)
   extends Profunctor p
   where
-  tamb {xμ : μ} {α β} : p α β  -> p (pair.left xμ α) (pair.right xμ β)
+  tamb {xμ : μ} : p α β  -> p (pair.left xμ α) (pair.right xμ β)
 
 class Tambs (actions : List (Σμ, ActionPair μ)) (p : Type u -> Type u -> Type w)  
   extends Profunctor p
@@ -86,17 +86,11 @@ inductive ExOptic
   (α β ς τ : Type u)
 | mk {xμ : μ} : (ς -> pair.left xμ α) -> (pair.right xμ β -> τ) -> ExOptic pair α β ς τ
 
-def ExOptic.xμ
-  (x : ExOptic (μ := μ) pair α β ς τ)
-  : μ
-  := match x with
-  | .mk (xμ := xμ) _ _ => xμ
-
 def ExOptic.left
   (x : ExOptic pair α β ς τ)
-  : Σxμ, ς -> pair.left xμ α
+  : ς -> Σxμ, pair.left xμ α
   := match x with 
-  | .mk (xμ := xμ) l _ => ⟨xμ, l⟩
+  | .mk (xμ := xμ) l _ => (Sigma.mk xμ ·) ∘ l
 
 def ExOptic.right
   {pair : ActionPair μ}
@@ -140,8 +134,9 @@ def ProfOptic.toExOptic
   [inst : MonoidalActionPair pair M₁ O]
   (x : ProfOptic [⟨M₀, pair⟩] α β ς τ)
   : ExOptic pair α β ς τ
-  := x (ExOptic pair α β) (ExOptic.mk inst.left_ax.unitor.inv inst.right_ax.unitor.hom)
-
-
+  := 
+   have := ExOptic.mk.{v, u} (α := α) (β := β) inst.left_ax.unitor.inv inst.right_ax.unitor.hom
+   have f := @x (ExOptic pair α β)
+   f this
 
 
