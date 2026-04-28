@@ -1,4 +1,17 @@
 import Mathlib.Control.Traversable.Basic
+import Mathlib.Control.Functor
+
+instance
+  [Functor G]
+  [Functor F]
+  : Functor (G ∘ F) := (inferInstance : Functor (Functor.Comp G F))
+
+instance
+  [Traversable G]
+  [Traversable F]
+  : Traversable (G ∘ F) where
+    traverse := fun f x => (Traversable.traverse (Traversable.traverse f)) x
+
 
 instance : Functor (Prod α) where
   map := fun f x => (x.fst, f x.snd)

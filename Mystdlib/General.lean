@@ -21,8 +21,6 @@ def Sum.assoc_inv : (α ⊕ β) ⊕ γ -> α ⊕ β ⊕ γ :=
 
 abbrev fmap [Functor F] (f : α -> β) (xfα : F α) : F β := Functor.map f xfα
 
-instance [Functor F] [Functor G] : Functor (G ∘ F) where
-  map := fun f => ((Functor.map (Functor.map f)) ·)
 
 instance [instf : Applicative F] [instg : Applicative G] : Applicative (G ∘ F) where
     pure := fun a => let aux := instg.pure a; let r := fmap instf.pure aux; r
