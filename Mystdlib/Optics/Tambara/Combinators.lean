@@ -216,4 +216,16 @@ instance : Tamb (μ := Σα, Algebra List α) ⟨algProdAction List, algProdActi
   tamb := fun {xμ _ _} f l x => have ⟨fst, snd⟩ := l.unzip; (xμ.snd.alg fst, f snd x)
 
 
+-- notation; most are taken from Control.Lens.Operators
 
+infixr:90 "<∘>" => ProfOptic.compose
+
+infixr:40 "%~" => over
+
+infixr:40 ".~" => set
+
+infixl:80 "^?" => flip preview
+
+infixr:80 "#" => review
+
+infixr:80 "^.." => flip toListOf

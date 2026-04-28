@@ -44,6 +44,8 @@ def mapA_attaching {m : Type u → Type v} [Applicative m] {α : Type w} {β : T
 
 def amp (x : α) (f : α -> β) : β := f x
 
+infixl:10 "&" => amp
+
 
 --
 

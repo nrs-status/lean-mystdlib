@@ -7,6 +7,8 @@ open Lean
 
 open Tamb
 
+open Lean.PrettyPrinter
+
 section Arrow
 
 def Syntax.mkArrow : Syntax -> Syntax -> Syntax :=
@@ -61,13 +63,58 @@ def app_prism : Prism' (Syntax × Array Syntax) Syntax :=
     | `($head $body*) => .inr (head, body)
     | x => .inl x
 
-partial def app_traverseVL : TraversalVL' Syntax Syntax :=
+partial def app_traversalVL : TraversalVL' Syntax Syntax :=
   fun F _ f x => match matching app_prism x with
   | .inl x => pure x
   | .inr (head, args) => 
-    (fun c k => Lean.Syntax.mkApp (.mk c) (.mk k)) <$> f head <*> args.traverse (app_traverseVL F f)
+    (fun c k => Lean.Syntax.mkApp (.mk c) (.mk k)) <$> f head <*> args.traverse (app_traversalVL F f)
 
 end App
+
+section Matchers
+
+def syntax_missing : Prism' Unit Syntax :=
+  .mk (fun _ => .missing) (fun | .missing => .inr .unit | x => .inl x)
+
+def syntax_node : Prism' (SourceInfo × SyntaxNodeKind × Array Syntax) Syntax :=
+  .mk 
+    (fun (srcinf, kind, ar) => .node srcinf kind ar)
+    (fun | .node srcinf kind ar => .inr (srcinf, kind, ar) | x => .inl x)
+
+def syntax_atom : Prism' (SourceInfo × String) Syntax :=
+  .mk
+    (fun (inf, str) => .atom inf str)
+    (fun | .atom inf str => .inr (inf, str) | x => .inl x)
+
+def syntax_ident : Prism' (SourceInfo × Substring.Raw × Name × List Syntax.Preresolved) Syntax :=
+  .mk
+    (fun (inf, substr, nm, l) => .ident inf substr nm l)
+    (fun | .ident inf substr nm l => .inr (inf, substr, nm, l) | x => .inl x)
+
+end Matchers
+
+section All
+
+partial def syntax_traversalVL : TraversalVL' Syntax Syntax :=
+  fun _ _ f x => match x with
+  | .node _ _ rest =>
+    (fun head rest' => match head with | .node x y _ => .node x y rest' | x => x) <$> f x <*> rest.traverse (syntax_traversalVL _ f)
+  | _ => f x
+
+def syntax_traversal : Traversal'.{0,0} Syntax Syntax := TraversalVL.toTraversal syntax_traversalVL
+
+
+/-
+#run_elab
+  let mystx <- `(Nat.succ 5 (Nat.succ 7 7))
+  let newthing := syntax_traversal.compose syntax_ident
+  let thingate := over (syntax_traversal.compose syntax_ident) (over (tuple 2) Lean.Name.eraseMacroScopes)
+  dbg_trace <- formatTerm <| thingate mystx
+  let thingate' := syntax_traversal <∘> syntax_ident %~ tuple 2 %~ Lean.Name.eraseMacroScopes
+  dbg_trace <- formatTerm <| thingate' mystx
+  dbg_trace <- formatTerm <| syntax_traversal <∘> syntax_ident %~ tuple 2 %~ Lean.Name.eraseMacroScopes <| mystx
+-/
+end All
 
 
 inductive bracketedBinderKind | explicit | implicit | strict_implicit | instance_implicit
