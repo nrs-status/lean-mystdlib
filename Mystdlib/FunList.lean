@@ -1,5 +1,7 @@
 import Mystdlib.General
 
+-- compare mniip's implementation @Bazaar
+
 @[reducible]
 def FunList.unfold_type (n : Nat) (α β : Type) : Type := 
   match n with

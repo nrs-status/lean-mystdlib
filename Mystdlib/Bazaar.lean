@@ -1,7 +1,21 @@
 import Mystdlib.Traversable
-import Mystdlib.Optics.Tambara.Tambara
-import Mystdlib.Optics.Tambara.CategoriesInstances
-import Mystdlib.Optics.Tambara.Optics
+
+/-
+from Profunctor Optics : Modular Data Accessors
+
+We say ς is traversable if the type ∀F, [Applicative F] -> (α -> f β) -> ς -> f τ is inhabited, where α is understood to be a focus of ς, and τ the result of reconstructing ς following the tranformation specifies by (α -> f β)
+
+the Bazaar datatype is used to show that
+[Inhabited (∀F, [Applicative F] -> (α -> f β) -> ς -> f τ is)]
+<->
+ς is isomorphic to FunList α β τ (which is itself isomorphic to Bazaar α β τ)
+
+
+ς -> FunList α β τ is shown passing (FunList α β) as the applicative functor for (traversableWitness : (∀F, [Applicative F] -> (α -> f β) -> ς -> f τ is))
+-/
+
+
+
 
 /- ofMniip -/
 
@@ -31,42 +45,25 @@ def Bazaar.sell (x : α) : Bazaar α β β :=
   , continuation := Vector.head
   }
 
+def Bazaar.sale {α} β [Traversable t] : t α → Bazaar α β (t β) := traverse sell
+
 /- end ofMniip -/
 
-def Baz (τ β α) := Bazaar α β τ
-
-instance : Functor (Baz τ β) where
+instance : Functor (Bazaar · β τ) where
   map := fun f g => {
     length := g.length
     elements := g.elements.map f
     continuation := g.continuation
     }
 
-instance : Traversable (Baz τ β) where
+instance : Traversable (Bazaar · β τ) where
   traverse := fun f ⟨length, elements, continuation⟩ =>
     have := Traversable.traverse (t := (Vector · length)) f elements
     Functor.map (fun x => ⟨length, x, continuation⟩) this
 
-def Baz.sold
-  (x : Baz τ α α)
+def Bazaar.sold
+  (x : Bazaar α α τ)
   : τ
   := match x with
   | ⟨_, elements, continuation⟩ => continuation elements
-
-def TraversalVL (α β ς τ) := (F : _) -> [Applicative F] -> (α -> F β) -> ς -> F τ
-
-def TraversalVL' (α ς) := TraversalVL α α ς ς
-
-namespace Tamb 
-
-def TraversalVL.toTraversal
-  (x : TraversalVL α β ς τ)
-  : Traversal α β ς τ
-  := Traversal.mk' (x (Bazaar α β) Bazaar.sell) Baz.sold
-
-
-
-
-
-
 
