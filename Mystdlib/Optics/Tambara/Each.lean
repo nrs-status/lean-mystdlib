@@ -1,7 +1,6 @@
 import Mystdlib.Optics.Tambara.Optics
 import Mystdlib.Optics.Tambara.Combinators
 import Mystdlib.Optics.Tambara.Traversal
-import Mystdlib.Optics.Tambara.Bazaar
 
 namespace Tamb
 
