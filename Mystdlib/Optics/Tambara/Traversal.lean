@@ -3,21 +3,32 @@ import Mystdlib.Optics.Tambara.Optics
 import Mystdlib.Optics.Tambara.Combinators
 import Mathlib.Control.Traversable.Basic
 import Mystdlib.Optics.Tambara.Cons
-import Mystdlib.Optics.Tambara.Bazaar
+import Mystdlib.Bazaar
 
-namespace Tamb
+
+def TraversalVL (α β ς τ) := (F : _) -> [Applicative F] -> (α -> F β) -> ς -> F τ
+
+def TraversalVL' (α ς) := TraversalVL α α ς ς
+
+namespace Tamb 
+
+def TraversalVL.toTraversal
+  (x : TraversalVL α β ς τ)
+  : Traversal α β ς τ
+  := Traversal.mk' (F := (Bazaar · β τ)) (x (Bazaar α β) Bazaar.sell) Bazaar.sold
+
 
 instance [Applicative F] : Profunctor (· -> F ·) where
   map := fun f g h => (Functor.map g ∘ h) ∘ f
 
 instance {m : Type u -> Type u} [Applicative m] : Tamb ⟨App Traversable, App Traversable⟩ (· -> (ULift.{w, u} ∘ m) ·) where
-  tamb := fun {α β xμ} f x => 
+  tamb := fun {xμ α β} f x => 
     have := xμ.snd.traverse (m := m) (α := α) (β := β)
     have := this (ULift.down ∘ f)
     .up (this x)
 
 instance {F : _} [Applicative F] : Tamb ⟨App Traversable, App Traversable⟩ (· -> F ·) where
-  tamb :=  fun {_ _ xμ} => xμ.snd.traverse
+  tamb :=  fun {xμ _ _} => xμ.snd.traverse
 
 def Traversal.traverseOf
   {α β ς τ : Type v}
@@ -59,6 +70,7 @@ def traverseOfExtract' -- for educational purposes
     have y₂ := Functor.map (·, y₁.snd) (traverse f y₁.fst)
     Functor.map (fun (l, s) => (extract s).snd l) y₂
 
+/- replaced by toListOf combinator with the (Folding α β) tambara module
 def toListOf
   {α β ς τ : Type u}
   (x : Traversal α β ς τ)
@@ -66,6 +78,7 @@ def toListOf
   := 
     let r := ProfOptic.toExOptic ⟨App Traversable, App Traversable⟩ NatTsfm traversableComp x
 (fun ⟨fst, snd⟩ => have := fst.snd; Traversable.toList (t := fst.fst) snd) ∘ r.left
+-/
   
 def partsOf
   {α ς τ : Type u}
@@ -77,9 +90,15 @@ def partsOf
         | .nil => pure a
         | .cons x xs => set xs >>= fun _ => pure x
     Lens.ofVL <| fun _ _ f s => 
-      have := Traversal.traverseOf'.{u, u + 1} x update s
+      have := Traversal.traverseOf x update s
       have := (Prod.fst ∘ Id.run) ∘ this.run
       Functor.map this (f (toListOf x s))
+
+def sequenceOf
+  [Applicative F]
+  (x : Traversal (F β) β ς τ)
+  : ς  -> F τ
+  := x.traverseOf id
       
 def traversed
   [Traversable F]
@@ -98,4 +117,18 @@ def final
   have := partsOf x
   have thisa := last (α := α) (ς := List α)
   this.compose thisa
+
+--mapAccumLOf :: LensLike (State acc) s t a b -> (acc -> a -> (acc, b)) -> acc -> s -> (acc, t)
+
+def mapAccumLOf -- double check whether the applicative instance is ok
+  (x : Traversal α β ς τ)
+  : (σ -> α -> σ × β) -> σ -> ς -> σ × τ
+  := fun f y => @x.traverseOf _ _ _ _ _ 
+    { pure := (y, ·)
+      seq := fun h g =>
+        have := g .unit
+        have thisa := h.snd this.snd
+        (this.fst, thisa)} 
+    (fun a => f y a)
+
 
