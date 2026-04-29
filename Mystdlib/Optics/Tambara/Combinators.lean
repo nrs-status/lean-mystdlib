@@ -6,11 +6,16 @@ import Mathlib.Control.Fold
 
 open Tamb
 
+-- for composition with iso
 instance [inst : Tambs l p]  : Tambs (l ++ []) p where
   tambs := by
     observe : l = l ++ []
     rw [<- this]
     exact inst.tambs
+
+-- for iso
+instance [Profunctor p] : Tambs [] p where
+  tambs := nofun
 
 instance : Profunctor (· -> ·) where
   map := fun f g h => (g ∘ h) ∘ f
@@ -43,6 +48,7 @@ instance {α : Type u} [Mul α] [One α] : Tamb ⟨App Foldable, ax⟩ (fun x _ 
   tamb := fun {xμ _ _} f x => xμ.snd.foldMap f x
 
 def view 
+  {α β ς τ : Type u}
   (x : ProfOptic l α β ς τ)
   [Tambs l (fun x _ => x -> α)]
   : ς -> α :=
@@ -55,6 +61,7 @@ instance : Tamb ⟨Sum.{u, u}, Sum⟩ (fun _ x => x) where
   tamb := fun x => .inr x
 
 def review
+  {α β ς τ : Type u}
   (x : ProfOptic l α β ς τ)
   [Tambs l (fun _ x => x)]
   : β -> τ
@@ -198,7 +205,7 @@ instance {α β : Type u} [Mul m] [One m] : Tamb ⟨App Traversable, ax⟩ (Fold
 instance {α β : Type u} [Mul m] [One m]: Tamb ⟨Prod, Prod⟩ (Folding m α β) where
   tamb := fun f g x => f g x.snd
 
-def toListOf
+def Tamb.ProfOptic.toListOf
   {α β ς τ : Type u}
   (x : ProfOptic l α β ς τ)
   [Tambs l (Folding (List α) α β)]
@@ -215,17 +222,3 @@ instance : Profunctor (Aggregating α β) where
 instance : Tamb (μ := Σα, Algebra List α) ⟨algProdAction List, algProdAction List⟩ (Aggregating α β) where
   tamb := fun {xμ _ _} f l x => have ⟨fst, snd⟩ := l.unzip; (xμ.snd.alg fst, f snd x)
 
-
--- notation; most are taken from Control.Lens.Operators
-
-infixr:90 "<∘>" => ProfOptic.compose
-
-infixr:40 "%~" => over
-
-infixr:40 ".~" => set
-
-infixl:80 "^?" => flip preview
-
-infixr:80 "#" => review
-
-infixr:80 "^.." => flip toListOf
