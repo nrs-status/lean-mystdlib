@@ -37,9 +37,13 @@ def arrow_last : Lens' Syntax (Syntax × List Syntax) :=
     (fun (head, tail) => if h : tail.isEmpty then head else tail.getLast !p) 
     (fun (head, tail) new => if h : tail.isEmpty then (new, []) else (head, tail.modify tail.length.pred (fun _ => new)))
 
-
 def arrow_fold : Fold Syntax Syntax :=
   .mk (F := List) (arrow_iso_stx_to · |> uncurry .cons)
+
+def arrow_aff_list : AffineTraversal' Syntax (List Syntax) :=
+  .mk 
+    (fun | .nil => .inl .nil | x => .inr <| Syntax.mkArrows x)
+    (fun l stx => arrow_iso_stx.view.{0, 0} stx |> (fun (head, rest) => l ++ (head :: rest)))
 
 partial def arrow_traversalVL : TraversalVL' Syntax Syntax  :=
   fun _ _ f x => Syntax.mkArrows <$> traverse f (arrow_fold.toListOf x)
