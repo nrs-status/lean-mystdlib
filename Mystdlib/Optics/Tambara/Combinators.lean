@@ -29,8 +29,6 @@ instance : Tamb ⟨Sum.{u,u}, Sum⟩ (· -> ·) where
 instance : Tamb ⟨App Traversable, App Traversable⟩ (· -> ·) where
   tamb := fun {xμ _ _} f => xμ.snd.toFunctor.map f
 
-
-
 instance {α : Type _} : Profunctor (fun (x _ : Type _) => x -> α) where
   map := fun f _ h => h ∘ f
 
@@ -53,6 +51,9 @@ def Tamb.ProfOptic.view
   [Tambs.{v, u, u} l (fun x _ => x -> α)]
   : ς -> α :=
   (x (fun ξ _ => ξ -> α)) id
+
+variable (x : AffineTraversal α β ς τ)
+
 
 instance : Profunctor (fun _ x => x) where
   map := fun _ f => f
@@ -141,22 +142,32 @@ def Tamb.ProfOptic.over
   : (α -> β) -> ς -> τ
   := x (Replacing α β) id
 
-instance : Profunctor (fun s t => s -> t ⊕ α) where
+abbrev Matching (α β ς τ : Type u) := ς -> τ ⊕ α
+
+instance : Profunctor (Matching α β) where
   map := fun f g h => (Sum.elim (.inl ∘ g) .inr ∘ h) ∘ f
 
-instance : Tamb ⟨Sum, Sum⟩ (fun (s t : Type u) => s -> t ⊕ α) where
+instance {α β : Type u} : Tamb ⟨Sum, Sum⟩ (Matching α β) where
   tamb := fun f => Sum.elim (fun xm => .inl (.inl xm)) (fun a => (f a).elim (fun b => .inl (.inr b)) .inr)
 
-instance : Tamb ⟨Affine, Affine⟩ (fun (s t : Type u) => s -> t ⊕ α) where
+instance : Tamb ⟨Affine, Affine⟩ (Matching α β) where
   tamb := fun f => Sum.elim 
     (fun x => (.inl (.inl x))) 
     (fun (fst, snd) => f snd |>.elim 
       (fun y => .inl (.inr (fst, y))) 
       .inr)
 
+instance
+  {α β : Type u}
+  : Tamb ⟨Prod, Prod⟩ (Matching α β) where
+    tamb := by simp [Matching]; exact
+      fun f x => match f x.snd with
+      | .inl x' => .inl (x.fst, x')
+      | .inr x' => .inr x'
+
 def Tamb.ProfOptic.matching
   (x : ProfOptic l α β ς τ)
-  [Tambs l (fun (s t : Type u) => s -> t ⊕ α)]
+  [Tambs l (Matching α β)]
   : ς -> τ ⊕ α
   := x (fun s t => s -> t ⊕ α) .inr
 

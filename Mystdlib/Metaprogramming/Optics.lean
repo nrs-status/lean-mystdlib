@@ -102,7 +102,6 @@ partial def syntax_traversalVL : TraversalVL' Syntax Syntax :=
 def syntax_traversal : Traversal'.{0,0} Syntax Syntax := TraversalVL.toTraversal syntax_traversalVL
 
 
-
 /-
 def xr'' := arrow_iso_stx <∘> arrow_last <∘> app_prism <∘> tuple 0
 def ctortype1 := MacroM.stx `(Unit -> Nat -> mytype String)
@@ -114,7 +113,6 @@ def r := r'' ctortype1
 #run_elab
   ctortypes.forM (fun s => do dbg_trace <- formatTerm <| r'' s)
 -/
-
 end All
 
 
