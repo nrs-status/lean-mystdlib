@@ -1,4 +1,5 @@
 import Mystdlib.Optics.Tambara.Combinators
+import Mystdlib.Optics.Tambara.Notation
 import Mystdlib.Optics.Tambara.Optics
 import Mystdlib.Optics.Tambara.Common
 import Mystdlib.Optics.Tambara.Each
