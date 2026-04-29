@@ -171,10 +171,9 @@ def Tamb.ProfOptic.matching
   : ς -> τ ⊕ α
   := x (fun s t => s -> t ⊕ α) .inr
 
-def Tamb.Prism.elim
-  /- (x : ProfOptic l α β ς τ) -/
-  /- [Tambs l (fun (s t : Type u) => s -> t ⊕ α)] -/
-  (x : Prism α β ς τ)
+def Tamb.ProfOptic.casesOf
+  (x : ProfOptic l α β ς τ)
+  [Tambs l (Matching α β)]
   (f : τ -> γ)
   (g : α -> γ)
   : ς -> γ
@@ -182,6 +181,12 @@ def Tamb.Prism.elim
   | .inl x' => f x'
   | .inr x' => g x'
 
+def Tamb.Prism.casesOf
+  (x : Prism α β ς τ)
+  (f : τ -> γ)
+  (g : α -> γ)
+  : ς -> γ
+  := Tamb.ProfOptic.casesOf x f g
 -- traversal downcast
 
 instance {p : Type u -> Type _ -> Type _} [inst : Tamb ⟨App Traversable, App Traversable⟩ p] : Tamb ⟨Sum, Sum⟩ p where
