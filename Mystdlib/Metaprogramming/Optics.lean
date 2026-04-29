@@ -54,18 +54,17 @@ end Arrow
 
 section App
 
-def app_prism : Prism' (Syntax × Array Syntax) Syntax :=
-  .mk
-    (Function.uncurry (fun x y => Lean.Syntax.mkApp (.mk x) (.mk y)))
-    fun
-    | `($head $body*) => .inr (head, body)
-    | x => .inl x
+def app_iso_stx : Iso' (Syntax × Array Syntax) Syntax :=
+  .mk 
+    (fun 
+      | `($head $args*) => (head, args)
+      | x => (x, .mk []))
+    (fun (head, args) => Lean.Syntax.mkApp (.mk head) (.mk args))
 
 partial def app_traversalVL : TraversalVL' Syntax Syntax :=
-  fun F _ f x => match app_prism.matching x with
-  | .inl x => pure x
-  | .inr (head, args) => 
-    (fun c k => Lean.Syntax.mkApp (.mk c) (.mk k)) <$> f head <*> args.traverse (app_traversalVL F f)
+  fun F _ f x =>
+    let (head, args) := app_iso_stx.view.{0,0} x
+    (fun head' args' => Lean.Syntax.mkApp (.mk head') (.mk args')) <$> f head <*> args.traverse (app_traversalVL F f)
 
 end App
 
@@ -103,16 +102,18 @@ def syntax_traversal : Traversal'.{0,0} Syntax Syntax := TraversalVL.toTraversal
 
 
 /-
-def xr'' := arrow_iso_stx <∘> arrow_last <∘> app_prism <∘> tuple 0
 def ctortype1 := MacroM.stx `(Unit -> Nat -> mytype String)
-def ctortype2 := MacroM.stx `(mytype Bool)
-def ctortypes := [ctortype1, ctortype2]
-def r'' := xr''.set (mkIdent `typate)
-def r := r'' ctortype1
-
+def ctortype2 := MacroM.stx `(Nat -> notapp)
+def ctortype3 := MacroM.stx `(mytype Nat)
+def ctortypes := [ctortype1, ctortype2, ctortype3]
+def prer := each (ς := List _) <∘> arrow_iso_stx <∘> arrow_last <∘> app_iso_stx <∘> tuple 0
+def r :=
+  (each <∘> arrow_iso_stx <∘> arrow_last <∘> app_iso_stx <∘> tuple 0).set (mkIdent `typate)
+  ctortypes
 #run_elab
-  ctortypes.forM (fun s => do dbg_trace <- formatTerm <| r'' s)
+  r.forM (do dbg_trace <- formatTerm ·)
 -/
+
 end All
 
 
