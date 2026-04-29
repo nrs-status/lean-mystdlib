@@ -92,7 +92,7 @@ def partsOf
     Lens.ofVL <| fun _ _ f s => 
       have := Traversal.traverseOf x update s
       have := (Prod.fst ∘ Id.run) ∘ this.run
-      Functor.map this (f (toListOf x s))
+      Functor.map this (f (x.toListOf s))
 
 def sequenceOf
   [Applicative F]
