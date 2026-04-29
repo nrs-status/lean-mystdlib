@@ -19,36 +19,30 @@ def Syntax.mkArrows : List Syntax -> Syntax
 | .cons x .nil => x
 | .cons x xs => Syntax.mkArrow x (Syntax.mkArrows xs)
 
-partial def arrow_prism_match : Syntax -> Syntax ⊕ (Syntax × Syntax × List Syntax)
-| `($x -> $y) => match arrow_prism_match y with
-  | .inl _ => .inr (x, y, [])
-  | .inr (y', y'', l) => .inr (x, y', y'' :: l)
-| `(Lean.Parser.Term.depArrow|$x -> $y) => match arrow_prism_match y with
-  | .inl _ => .inr (x, y, [])
-  | .inr (y', y'', l) => .inr (x, y', y'' :: l)
-| x => .inl x
+partial def arrow_iso_stx_to : Syntax -> (Syntax × List Syntax)
+| `($x -> $y) => match recur y with
+  | (head, rest) => (x, head :: rest)
+| `(Lean.Parser.Term.depArrow|$x -> $y) => match recur y with
+  | (head, rest) => (x, head :: rest)
+| x => (x, [])
 
-def arrow_prism : Prism' (Syntax × Syntax × List Syntax) Syntax :=
-  .mk
-    (fun (x, y, xs) => Syntax.mkArrows (x :: y :: xs))
-    arrow_prism_match
+def arrow_iso_stx_from : (Syntax × List Syntax) -> Syntax
+| (head, rest) => Syntax.mkArrows (head :: rest)
 
-def two_elm_arrow_iso : Iso' (Syntax × Syntax) (Syntax × Syntax × List Syntax) :=
+def arrow_iso_stx : Iso' (Syntax × List Syntax) Syntax :=
+  .mk arrow_iso_stx_to arrow_iso_stx_from
+
+def arrow_last : Lens' Syntax (Syntax × List Syntax) :=
   .mk 
-    (fun (fst, snd, rest) => (fst, Syntax.mkArrows (snd :: rest)))
-    (fun (head, rest) => match matching arrow_prism rest with
-      | .inl x => (head, x, [])
-      | .inr (y, y', rest') => (head, y, (y' :: rest')))
+    (fun (head, tail) => if h : tail.isEmpty then head else tail.getLast !p) 
+    (fun (head, tail) new => if h : tail.isEmpty then (new, []) else (head, tail.modify tail.length.pred (fun _ => new)))
 
-def two_elm_arrow := arrow_prism.compose two_elm_arrow_iso
-
-def arrow_append := Function.curry (review two_elm_arrow)
 
 def arrow_fold : Fold Syntax Syntax :=
-  .mk (arrow_prism.elim (fun _ => .nil) (fun (fst, snd, rest) => fst :: snd :: rest))
+  .mk (F := List) (arrow_iso_stx_to · |> uncurry .cons)
 
 partial def arrow_traversalVL : TraversalVL' Syntax Syntax  :=
-  fun _ _ f x => Syntax.mkArrows <$> traverse f (toListOf arrow_fold x)
+  fun _ _ f x => Syntax.mkArrows <$> traverse f (arrow_fold.toListOf x)
 
 partial def arrow_traversal := arrow_traversalVL.toTraversal
 
@@ -64,7 +58,7 @@ def app_prism : Prism' (Syntax × Array Syntax) Syntax :=
     | x => .inl x
 
 partial def app_traversalVL : TraversalVL' Syntax Syntax :=
-  fun F _ f x => match matching app_prism x with
+  fun F _ f x => match app_prism.matching x with
   | .inl x => pure x
   | .inr (head, args) => 
     (fun c k => Lean.Syntax.mkApp (.mk c) (.mk k)) <$> f head <*> args.traverse (app_traversalVL F f)
@@ -104,16 +98,19 @@ partial def syntax_traversalVL : TraversalVL' Syntax Syntax :=
 def syntax_traversal : Traversal'.{0,0} Syntax Syntax := TraversalVL.toTraversal syntax_traversalVL
 
 
+
 /-
+def xr'' := arrow_iso_stx <∘> arrow_last <∘> app_prism <∘> tuple 0
+def ctortype1 := MacroM.stx `(Unit -> Nat -> mytype String)
+def ctortype2 := MacroM.stx `(mytype Bool)
+def ctortypes := [ctortype1, ctortype2]
+def r'' := xr''.set (mkIdent `typate)
+def r := r'' ctortype1
+
 #run_elab
-  let mystx <- `(Nat.succ 5 (Nat.succ 7 7))
-  let newthing := syntax_traversal.compose syntax_ident
-  let thingate := over (syntax_traversal.compose syntax_ident) (over (tuple 2) Lean.Name.eraseMacroScopes)
-  dbg_trace <- formatTerm <| thingate mystx
-  let thingate' := syntax_traversal <∘> syntax_ident %~ tuple 2 %~ Lean.Name.eraseMacroScopes
-  dbg_trace <- formatTerm <| thingate' mystx
-  dbg_trace <- formatTerm <| syntax_traversal <∘> syntax_ident %~ tuple 2 %~ Lean.Name.eraseMacroScopes <| mystx
+  ctortypes.forM (fun s => do dbg_trace <- formatTerm <| r'' s)
 -/
+
 end All
 
 

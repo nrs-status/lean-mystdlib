@@ -23,14 +23,14 @@ def showing
   (x : Lens α β ς τ)
   (f : α -> β)
   : ς -> β × τ
-  := fun s => (f <| view x s, over x f s)
+  := fun s => (f <| x.view s, x.over f s)
 
 -- like showing, but return old part
 def tracking
   (x : Lens α β ς τ)
   (f : α -> β)
   : ς -> α × τ
-  := fun s => (view x s, over x f s)
+  := fun s => (x.view s, x.over f s)
 
 
 def fst {α β : Type u} : Lens' α (α × β) :=

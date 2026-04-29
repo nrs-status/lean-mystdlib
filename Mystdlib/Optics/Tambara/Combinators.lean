@@ -47,10 +47,10 @@ open Foldable in
 instance {α : Type u} [Mul α] [One α] : Tamb ⟨App Foldable, ax⟩ (fun x _ => x -> α) where
   tamb := fun {xμ _ _} f x => xμ.snd.foldMap f x
 
-def view 
+def Tamb.ProfOptic.view 
   {α β ς τ : Type u}
-  (x : ProfOptic l α β ς τ)
-  [Tambs l (fun x _ => x -> α)]
+  (x : ProfOptic.{v, u, u} l α β ς τ)
+  [Tambs.{v, u, u} l (fun x _ => x -> α)]
   : ς -> α :=
   (x (fun ξ _ => ξ -> α)) id
 
@@ -60,9 +60,9 @@ instance : Profunctor (fun _ x => x) where
 instance : Tamb ⟨Sum.{u, u}, Sum⟩ (fun _ x => x) where
   tamb := fun x => .inr x
 
-def review
+def Tamb.ProfOptic.review
   {α β ς τ : Type u}
-  (x : ProfOptic l α β ς τ)
+  (x : ProfOptic.{v, u, u} l α β ς τ)
   [Tambs l (fun _ x => x)]
   : β -> τ
   := x (fun _ x => x)
@@ -91,7 +91,7 @@ instance : Tamb ⟨App Traversable, App Traversable⟩ (fun x _ => x -> Option �
   Traversable.foldlm (t := xμ.fst) (m := Id)  
     (fun x => x.elim f fun a _ => .some a) .none x
 
-def preview
+def Tamb.ProfOptic.preview
   (x : ProfOptic l α β ς τ)
   [Tambs l (fun x _ => x -> Option α)]
   : ς -> Option α 
@@ -112,7 +112,7 @@ instance : Tamb ⟨Sum.{u,u}, Sum⟩ (Setting α β) where
 instance : Tamb ⟨Affine, Affine⟩ (Setting α β) where
   tamb := fun f g => Sum.elim .inl (fun x => .inr (x.fst, f g x.snd))
 
-def set
+def Tamb.ProfOptic.set
   (x : ProfOptic l α β ς τ)
   [Tambs l (Setting α β)]
   : β -> ς -> τ
@@ -135,7 +135,7 @@ instance : Tamb ⟨App Traversable, App Traversable⟩ (Replacing α β) where
 instance : Tamb ⟨Affine, Affine⟩ (Replacing α β) where
   tamb := fun f g => Sum.elim .inl (fun x => .inr (x.fst, f g x.snd))
 
-def over 
+def Tamb.ProfOptic.over 
   (x : ProfOptic l α β ς τ)
   [Tambs l (Replacing α β)]
   : (α -> β) -> ς -> τ
@@ -154,7 +154,7 @@ instance : Tamb ⟨Affine, Affine⟩ (fun (s t : Type u) => s -> t ⊕ α) where
       (fun y => .inl (.inr (fst, y))) 
       .inr)
 
-def matching
+def Tamb.ProfOptic.matching
   (x : ProfOptic l α β ς τ)
   [Tambs l (fun (s t : Type u) => s -> t ⊕ α)]
   : ς -> τ ⊕ α
@@ -167,7 +167,7 @@ def Tamb.Prism.elim
   (f : τ -> γ)
   (g : α -> γ)
   : ς -> γ
-  := fun s => match matching x s with
+  := fun s => match x.matching s with
   | .inl x' => f x'
   | .inr x' => g x'
 

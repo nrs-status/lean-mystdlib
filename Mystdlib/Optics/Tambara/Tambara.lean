@@ -11,7 +11,7 @@ class Tamb (pair : ActionPair μ) (p : Type u -> Type u -> Type w)
   where
   tamb {xμ : μ} {α β} : p α β  -> p (pair.left xμ α) (pair.right xμ β)
 
-class Tambs (actions : List (Σμ, ActionPair μ)) (p : Type u -> Type u -> Type w)  
+class Tambs.{u, v, w} (actions : List (Σ(μ : Type u), ActionPair μ)) (p : Type v -> Type v -> Type w)  
   extends Profunctor p
   where
     tambs : (i : Fin actions.length) -> Tamb actions[i].snd p
@@ -39,8 +39,9 @@ instance
         rw [<- fineq, this]
         exact inst.tambs (fin.pred (by grind))
 
-def ProfOptic.{w} (actions : List (Σμ, ActionPair μ)) (α β ς τ : Type u) :=
-  (p : Type u -> Type u -> Type (max u w)) -> [Tambs actions p] -> p α β -> p ς τ
+def ProfOptic.{u, v, w} (actions : List (Σ(μ : Type u), ActionPair μ)) (α β ς τ : Type v) :=
+  (p : Type v -> Type v -> Type w) -> [Tambs actions p] -> p α β -> p ς τ
+
 
 def ProfOptic.compose_aux
   (tambs : Tambs (l ++ l') p)

@@ -10,6 +10,8 @@ class Each (α β ς τ : Type u) where
 class Each' (α : outParam (Type u)) (ς : Type u) where
   each : Traversal α α ς ς
 
+export Each' (each)
+
 instance : Each' α α where
   each := TraversalVL.toTraversal fun _ _ f x => f x
 

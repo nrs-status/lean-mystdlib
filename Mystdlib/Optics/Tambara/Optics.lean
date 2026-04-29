@@ -45,7 +45,7 @@ def Getter.mk
   := ExOptic.toProfOptic (ExGetter.mk .unit f)
 
 
-def Fold (α ς) := ProfOptic [Sigma.mk _ ⟨App Foldable, App Foldable⟩] α Unit ς Unit 
+def Fold (α ς : Type u) := ProfOptic [Sigma.mk _ ⟨App Foldable, App Foldable⟩] α PUnit ς PUnit 
 
 def Fold.mk
   [Foldable F]
@@ -58,7 +58,7 @@ def Lens (α β ς τ : Type u) := ProfOptic [Sigma.mk _ ⟨Prod, Prod⟩] α β
 
 def Lens.mk
   (get : ς -> α)
-  (set : ς -> β -> τ)
+  (set : ς -> β -> τ) 
   : Lens α β ς τ
   := ExOptic.toProfOptic (.mk (fun s => (s, get s)) (Function.uncurry set))
 

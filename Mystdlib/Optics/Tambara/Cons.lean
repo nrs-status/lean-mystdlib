@@ -24,7 +24,7 @@ instance : Cons' α (Array α) where
 def cons 
   {α ς : Type u}
   [inst : Cons' α ς] : α -> ς -> ς :=
-  Function.curry (review inst.prism)
+  Function.curry inst.prism.review
 
 def head
   {α ς : Type u}
@@ -36,7 +36,7 @@ def head_affinetraversalb -- for educational purposes
   [inst : Cons' α ς]
   : AffineTraversalb' α ς 
   := AffineTraversalb.mk
-    (fun s => match matching inst.prism s with
+    (fun s => match inst.prism.matching s with
       | .inl x => .inl x
       | .inr x => .inr x.fst)
     (flip cons)
@@ -63,7 +63,7 @@ instance : Snoc' α (Array α) where
     (fun ar => if h : ar.isEmpty then .inl ar else .inr (ar.pop, ar.back (by grind)))
 
 def snoc [inst : Snoc' α ς] : ς -> α -> ς :=
-  Function.curry (review inst.prism)
+  Function.curry inst.prism.review
 
 def init
   [inst : Snoc' α ς]
