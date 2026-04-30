@@ -90,7 +90,6 @@ def syntax_ident : Prism' (SourceInfo × Substring.Raw × Name × List Syntax.Pr
 
 end Matchers
 
-section All
 
 partial def syntax_traversalVL : TraversalVL' Syntax Syntax :=
   fun _ _ f x => match x with
@@ -100,21 +99,6 @@ partial def syntax_traversalVL : TraversalVL' Syntax Syntax :=
 
 def syntax_traversal : Traversal'.{0,0} Syntax Syntax := TraversalVL.toTraversal syntax_traversalVL
 
-
-/-
-def ctortype1 := MacroM.stx `(Unit -> Nat -> mytype String)
-def ctortype2 := MacroM.stx `(Nat -> notapp)
-def ctortype3 := MacroM.stx `(mytype Nat)
-def ctortypes := [ctortype1, ctortype2, ctortype3]
-def prer := each (ς := List _) <∘> arrow_iso_stx <∘> arrow_last <∘> app_iso_stx <∘> tuple 0
-def r :=
-  (each <∘> arrow_iso_stx <∘> arrow_last <∘> app_iso_stx <∘> tuple 0).set (mkIdent `typate)
-  ctortypes
-#run_elab
-  r.forM (do dbg_trace <- formatTerm ·)
--/
-
-end All
 
 
 inductive bracketedBinderKind | explicit | implicit | strict_implicit | instance_implicit
@@ -138,5 +122,103 @@ def bracketedBinder : Prism' (bracketedBinderKind × Array Syntax × Syntax) Syn
     | x => .inl x
 
 
+section Structures
+/-
+def mkStructureField (fieldName : TSyntax `ident) (fieldType : TSyntax ``optDeclSig) : MacroM (TSyntax `Lean.Parser.Command.structSimpleBinder):= do
+  let r <- `(structSimpleBinder| $(.mk fieldName.raw):ident $fieldType)
+  return r
+-/
+
+end Structures
+
+section Inductive
+
+structure InductiveStx where
+  declmods : Syntax
+  declid : Syntax
+  optdeclsig : Option Syntax
+  ctors : Array Syntax
+  cfields : Option Syntax
+  optderiving : Array Syntax
+
+def inductive_stx_prism_match : Syntax -> Syntax ⊕ InductiveStx
+| `(Lean.Parser.Command.declaration|$declmods inductive $declid $[$optdeclsig]? where $ctors* $[$cfields]? $optderiving) => 
+  let optderiving' : Array Syntax := match optderiving with
+  | `(Lean.Parser.Command.optDeriving|deriving $x,*) => x
+  | _ => #[]
+  .inr ⟨declmods, declid, optdeclsig, ctors, cfields, optderiving'⟩
+| x => .inl x
+
+def inductive_stx_prism_build : InductiveStx -> Syntax
+| ⟨declmods, declid, optdeclsig, ctors, cfields, optderiving⟩ => 
+  let optderiving' : Option (TSyntax ``Lean.Parser.Command.optDeriving) := if optderiving.isEmpty
+    then Option.none
+    else Option.some <| MacroM.tstx `(Lean.Parser.Command.optDeriving|deriving $(.mk optderiving),*)
+  let optdeclsig' : Option (TSyntax `Lean.Parser.Term.typeSpec) := optdeclsig.elim .none (fun stx => .some (.mk stx))
+  let cfields' : Option (TSyntax `Lean.Parser.Command.computedFields) := cfields.elim .none (fun stx => .some (.mk stx))
+  match optderiving' with
+  | .none => MacroM.stx `($(.mk declmods):declModifiers inductive $(.mk declid):declId $[$optdeclsig']? where $(.mk ctors)* $[$cfields']?)
+  | .some x => MacroM.stx `($(.mk declmods):declModifiers inductive $(.mk declid):declId $[$optdeclsig']? where $(.mk ctors)* $[$cfields']? $x)
 
 
+def inductive_stx_prism : Prism' InductiveStx Syntax :=
+  .mk inductive_stx_prism_build inductive_stx_prism_match
+
+end Inductive
+
+section Structure
+
+structure StructureStx where
+  declmods : Syntax
+  declid : Syntax
+  optdeclsig : Option Syntax
+  fields : Array Syntax
+  optderiving : Array Syntax
+
+def structure_stx_prism_match : Syntax -> Syntax ⊕ StructureStx
+| `(Lean.Parser.Command.declaration|$declmods structure $declid $[$optdeclsig]? where $fields:structFields $optderiving) =>
+  let fields' := match fields with
+  | `(Lean.Parser.Command.structFields|$x*) => x.raw
+  | _ => #[]
+  let optderiving' : Array Syntax := match optderiving with
+  | `(Lean.Parser.Command.optDeriving|deriving $x,*) => x
+  | _ => #[]
+  .inr ⟨declmods, declid, optdeclsig, fields', optderiving'⟩
+| x => .inl x
+
+def structure_stx_prism_build : StructureStx -> Syntax :=
+  fun ⟨declmods, declid, optdeclsig, fields, optderiving⟩ =>
+  let optderiving' : Option (TSyntax ``Lean.Parser.Command.optDeriving) := if optderiving.isEmpty
+    then Option.none
+    else Option.some <| MacroM.tstx `(Lean.Parser.Command.optDeriving|deriving $(.mk optderiving),*)
+  let optdeclsig' : Option (TSyntax `Lean.Parser.Term.typeSpec) := optdeclsig.elim .none (fun stx => .some (.mk stx))
+  let fields' : TSyntax `Lean.Parser.Command.structFields := MacroM.tstx `(Lean.Parser.Command.structFields| $(.mk fields)*)
+  match optderiving', fields.isEmpty with
+  | .none, .false => MacroM.stx `($(.mk declmods) structure $(.mk declid) $[$optdeclsig']? where)
+  | .some _, .false => .missing
+  | .none, .true => MacroM.stx `($(.mk declmods) structure $(.mk declid) $[$optdeclsig']? where $fields':structFields)
+  | .some x, .true => MacroM.stx `($(.mk declmods) structure $(.mk declid) $[$optdeclsig']? where $fields':structFields $x)
+
+def structure_stx_prism : Prism' StructureStx Syntax :=
+  .mk structure_stx_prism_build structure_stx_prism_match
+
+def structure_stx_fields : Lens' (Array Syntax) StructureStx :=
+  .mk StructureStx.fields ({ . with fields := · })
+
+def structure_stx_declid : Lens' Syntax StructureStx :=
+  .mk StructureStx.declid ({ · with declid := · })
+
+end Structure
+
+/-
+def ctortype1 := MacroM.stx `(Unit -> Nat -> mytype String)
+def ctortype2 := MacroM.stx `(Nat -> notapp)
+def ctortype3 := MacroM.stx `(mytype Nat)
+def ctortypes := [ctortype1, ctortype2, ctortype3]
+def prer := each (ς := List _) <∘> arrow_iso_stx <∘> arrow_last <∘> app_iso_stx <∘> tuple 0
+def r :=
+  (each <∘> arrow_iso_stx <∘> arrow_last <∘> app_iso_stx <∘> tuple 0).set (mkIdent `typate)
+  ctortypes
+#run_elab
+  r.forM (do dbg_trace <- formatTerm ·)
+-/
