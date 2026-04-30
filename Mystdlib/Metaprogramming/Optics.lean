@@ -219,7 +219,7 @@ def structure_stx_prism_build : StructureStx -> Syntax :=
     then Option.none
     else Option.some <| MacroM.tstx `(Lean.Parser.Command.optDeriving|deriving $(.mk optderiving),*)
   let optdeclsig' : Option (TSyntax `Lean.Parser.Term.typeSpec) := optdeclsig.elim .none (fun stx => .some (.mk stx))
-  let fields' : TSyntax `Lean.Parser.Command.structFields := MacroM.tstx `(Lean.Parser.Command.structFields| $(.mk fields)*)
+  let fields' : TSyntax `Lean.Parser.Command.structFields := MacroM.tstx `(Lean.Parser.Command.structFields| $(.mk <| fields.map structure_field_stx_prism.review)*)
   match optderiving', fields.isEmpty with
   | .none, .false => MacroM.stx `($(.mk declmods) structure $(.mk declid) $[$optdeclsig']? where)
   | .some _, .false => .missing
