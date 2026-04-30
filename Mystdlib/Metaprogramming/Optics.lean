@@ -168,17 +168,44 @@ end Inductive
 
 section Structure
 
+/-
+inductive bracketedBinderKind | explicit | implicit | strict_implicit | instance_implicit
+def bracketedBinder : Prism' (bracketedBinderKind × Array Syntax × Syntax) Syntax :=
+-/
+
+inductive structureFieldKind | explicit | implicit | instance_implicit | simple
+structure StructureFieldStx where
+  kind : structureFieldKind
+  lhs : Syntax
+  rhs : Syntax
+
+open Lean Parser Command in
+def structure_field_stx_prism : Prism' StructureFieldStx Syntax :=
+  .mk
+    (fun ⟨kind, lhs, rhs⟩ => match kind with
+    | .explicit => MacroM.stx `(structExplicitBinder|($(.mk lhs) : $(.mk rhs)))
+    | .implicit => MacroM.stx `(structImplicitBinder|{$(.mk lhs) : $(.mk rhs)})
+    | .instance_implicit => MacroM.stx `(structInstBinder|[$(.mk lhs) : $(.mk rhs)])
+    | .simple => MacroM.stx `(structSimpleBinder|$(.mk lhs):ident : $(.mk rhs)))
+    fun
+    | `(structExplicitBinder|($lhs : $rhs)) => .inr ⟨.explicit, lhs ,rhs⟩
+    | `(structImplicitBinder|{$lhs : $rhs}) => .inr ⟨.implicit, lhs, rhs⟩
+    | `(structInstBinder|[$lhs : $rhs]) => .inr ⟨.instance_implicit, lhs, rhs⟩
+    | `(structSimpleBinder|$lhs:ident : $rhs) => .inr ⟨.simple, lhs, rhs⟩
+    | x => .inl x
+
+
 structure StructureStx where
   declmods : Syntax
   declid : Syntax
   optdeclsig : Option Syntax
-  fields : Array Syntax
+  fields : Array StructureFieldStx
   optderiving : Array Syntax
 
 def structure_stx_prism_match : Syntax -> Syntax ⊕ StructureStx
 | `(Lean.Parser.Command.declaration|$declmods structure $declid $[$optdeclsig]? where $fields:structFields $optderiving) =>
   let fields' := match fields with
-  | `(Lean.Parser.Command.structFields|$x*) => x.raw
+  | `(Lean.Parser.Command.structFields|$x*) => x.filterMap structure_field_stx_prism.preview
   | _ => #[]
   let optderiving' : Array Syntax := match optderiving with
   | `(Lean.Parser.Command.optDeriving|deriving $x,*) => x
@@ -202,14 +229,13 @@ def structure_stx_prism_build : StructureStx -> Syntax :=
 def structure_stx_prism : Prism' StructureStx Syntax :=
   .mk structure_stx_prism_build structure_stx_prism_match
 
-def structure_stx_fields : Lens' (Array Syntax) StructureStx :=
+def structure_stx_fields : Lens' (Array StructureFieldStx) StructureStx :=
   .mk StructureStx.fields ({ . with fields := · })
 
 def structure_stx_declid : Lens' Syntax StructureStx :=
   .mk StructureStx.declid ({ · with declid := · })
 
 end Structure
-
 /-
 def ctortype1 := MacroM.stx `(Unit -> Nat -> mytype String)
 def ctortype2 := MacroM.stx `(Nat -> notapp)
