@@ -294,10 +294,10 @@ def structure_stx_prism_build : StructureStx -> Syntax :=
   let fields' : TSyntax `Lean.Parser.Command.structFields := MacroM.tstx 
     `(Lean.Parser.Command.structFields| $(.mk <| fields.map structure_field_stx_prism.review)*)
   match optderiving', fields.isEmpty with
-  | .none, .false => MacroM.stx `($(.mk declmods'):declModifiers structure $(.mk (mkCIdent declid)):ident $[$optdeclsig']? where $fields':structFields)
-  | .some x, .false => MacroM.stx `($(.mk declmods'):declModifiers structure $(.mk (mkCIdent declid)):ident $[$optdeclsig']? where $fields':structFields $x)
-  | .none, .true => MacroM.stx `($(.mk declmods'):declModifiers structure $(.mk (mkCIdent declid)):ident $[$optdeclsig']? where $fields':structFields)
-  | .some x, .true => MacroM.stx `($(.mk declmods'):declModifiers structure $(.mk (mkCIdent declid)):ident $[$optdeclsig']? where $fields':structFields $x)
+  | .none, .false => MacroM.stx `($(.mk declmods'):declModifiers structure $(.mk (mkIdent declid)):ident $[$optdeclsig']? where $fields':structFields)
+  | .some x, .false => MacroM.stx `($(.mk declmods'):declModifiers structure $(.mk (mkIdent declid)):ident $[$optdeclsig']? where $fields':structFields $x)
+  | .none, .true => MacroM.stx `($(.mk declmods'):declModifiers structure $(.mk (mkIdent declid)):ident $[$optdeclsig']? where $fields':structFields)
+  | .some x, .true => MacroM.stx `($(.mk declmods'):declModifiers structure $(.mk (mkIdent declid)):ident $[$optdeclsig']? where $fields':structFields $x)
 
 
 def structure_stx_prism : Prism' StructureStx Syntax :=
@@ -308,7 +308,7 @@ def structure_stx_fields : Lens' (Array StructureFieldStx) StructureStx :=
 
 def structure_stx_declid : Lens' Name StructureStx :=
   .mk StructureStx.declid ({ · with declid := · })
-/-
+
 def mystructstx : StructureStx where
   declmods := ∅
   declid := `hi
@@ -322,7 +322,6 @@ def mystructstx : StructureStx where
   let stx <- `($(.mk declmods_as_stx):declModifiers structure hi where)
   dbg_trace <- ppCategory `command stx
   dbg_trace <- ppCategory `command <| structure_stx_prism.review mystructstx
--/
 end Structure
 /-
 def ctortype1 := MacroM.stx `(Unit -> Nat -> mytype String)
