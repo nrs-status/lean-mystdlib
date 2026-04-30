@@ -121,6 +121,65 @@ def bracketedBinder : Prism' (bracketedBinderKind × Array Syntax × Syntax) Syn
     | `(bracketedBinder|[$x]) => .inr (.instance_implicit, #[], x)
     | x => .inl x
 
+section DeclModifiers
+/-
+def declModifiers (inline : Bool) := leading_parser
+  optional docComment >>
+  optional (Term.«attributes» >> if inline then skip else ppDedent ppLine) >>
+  optional visibility >>
+  optional «protected» >>
+  optional («meta» <|> «noncomputable») >>
+  optional «unsafe» >>
+  optional («partial» <|> «nonrec»)
+-/
+
+structure DeclModifiers where
+  meta_or_noncomputable : Fin 3 -- 0 = none; 1 = meta; 2 = noncomputable
+  unsafe_ : Bool
+  partial_or_nonrec : Fin 3 -- same idea as above
+
+instance : EmptyCollection DeclModifiers where
+  emptyCollection := ⟨0, .false, 0⟩
+
+open Lean Parser Command in
+def declmodifiers_stx_match : Syntax -> Syntax ⊕ DeclModifiers
+| `(declModifiersF|$[$docComment]? $[$attributes]? $[$vis]? $[$protected_]? $[$meta_or_noncomputable?]? $[$unsafe_]? $[$partial_or_nonrec?]?) =>
+  let meta_or_noncomputable?' : Fin 3 := match meta_or_noncomputable? with
+  | .none => 0
+  | .some x => match x with
+    | `(«meta»|meta) => 1
+    | `(«noncomputable»|noncomputable) => 2
+    | _ => 0
+  let partial_or_nonrec?' : Fin 3 := match partial_or_nonrec? with
+  | .none => 0
+  | .some x => match x with
+    | `(«partial»|partial) => 1
+    | `(«nonrec»|nonrec) => 2
+    | _ => 0
+  .inr ⟨meta_or_noncomputable?', unsafe_.elim .false (fun _ => .true), partial_or_nonrec?'⟩
+| x => .inl x
+
+open Lean Parser Command in
+def declmodifiers_stx_build : DeclModifiers -> Syntax :=
+  fun ⟨meta_or_noncomputable, unsafe_, partial_or_nonrec⟩ =>
+    let meta_or_noncomputable' := match meta_or_noncomputable with
+    | 0 => Option.none
+    | 1 => .some <| .mk <| MacroM.stx `(«meta»|meta)
+    | 2 => .some <| .mk <| MacroM.stx `(«noncomputable»|noncomputable)
+    let unsafe_' := match unsafe_ with
+    | .false => .none
+    | .true => .some <| MacroM.tstx `(«unsafe»|unsafe)
+    let partial_or_nonrec' := match partial_or_nonrec with
+    | 0 => Option.none
+    | 1 => .some <| .mk <| MacroM.stx `(«partial»|partial)
+    | 2 => .some <| .mk <| MacroM.stx `(«nonrec»|nonrec)
+    MacroM.stx `(declModifiersF|$(.none)? $(.none)? $(.none)? $(.none)? $(meta_or_noncomputable')? $(unsafe_')? $(partial_or_nonrec')?)
+
+def declmodifiers_stx_prism : Prism' DeclModifiers Syntax :=
+  .mk declmodifiers_stx_build declmodifiers_stx_match
+
+end DeclModifiers
+
 
 section Structures
 /-
@@ -134,7 +193,7 @@ end Structures
 section Inductive
 
 structure InductiveStx where
-  declmods : Syntax
+  declmods : DeclModifiers
   declid : Syntax
   optdeclsig : Option Syntax
   ctors : Array Syntax
@@ -143,22 +202,26 @@ structure InductiveStx where
 
 def inductive_stx_prism_match : Syntax -> Syntax ⊕ InductiveStx
 | `(Lean.Parser.Command.declaration|$declmods inductive $declid $[$optdeclsig]? where $ctors* $[$cfields]? $optderiving) => 
+  let declmods' := match declmodifiers_stx_prism.preview declmods with
+  | .some x => x
+  | .none => ∅
   let optderiving' : Array Syntax := match optderiving with
   | `(Lean.Parser.Command.optDeriving|deriving $x,*) => x
   | _ => #[]
-  .inr ⟨declmods, declid, optdeclsig, ctors, cfields, optderiving'⟩
+  .inr ⟨declmods', declid, optdeclsig, ctors, cfields, optderiving'⟩
 | x => .inl x
 
 def inductive_stx_prism_build : InductiveStx -> Syntax
 | ⟨declmods, declid, optdeclsig, ctors, cfields, optderiving⟩ => 
+  let declmods' := declmodifiers_stx_prism.review declmods
   let optderiving' : Option (TSyntax ``Lean.Parser.Command.optDeriving) := if optderiving.isEmpty
     then Option.none
     else Option.some <| MacroM.tstx `(Lean.Parser.Command.optDeriving|deriving $(.mk optderiving),*)
   let optdeclsig' : Option (TSyntax `Lean.Parser.Term.typeSpec) := optdeclsig.elim .none (fun stx => .some (.mk stx))
   let cfields' : Option (TSyntax `Lean.Parser.Command.computedFields) := cfields.elim .none (fun stx => .some (.mk stx))
   match optderiving' with
-  | .none => MacroM.stx `($(.mk declmods):declModifiers inductive $(.mk declid):declId $[$optdeclsig']? where $(.mk ctors)* $[$cfields']?)
-  | .some x => MacroM.stx `($(.mk declmods):declModifiers inductive $(.mk declid):declId $[$optdeclsig']? where $(.mk ctors)* $[$cfields']? $x)
+  | .none => MacroM.stx `($(.mk declmods'):declModifiers inductive $(.mk declid):declId $[$optdeclsig']? where $(.mk ctors)* $[$cfields']?)
+  | .some x => MacroM.stx `($(.mk declmods'):declModifiers inductive $(.mk declid):declId $[$optdeclsig']? where $(.mk ctors)* $[$cfields']? $x)
 
 
 def inductive_stx_prism : Prism' InductiveStx Syntax :=
@@ -196,35 +259,46 @@ def structure_field_stx_prism : Prism' StructureFieldStx Syntax :=
 
 
 structure StructureStx where
-  declmods : Syntax
-  declid : Syntax
+  declmods : DeclModifiers
+  declid : Lean.Name
   optdeclsig : Option Syntax
   fields : Array StructureFieldStx
   optderiving : Array Syntax
 
 def structure_stx_prism_match : Syntax -> Syntax ⊕ StructureStx
 | `(Lean.Parser.Command.declaration|$declmods structure $declid $[$optdeclsig]? where $fields:structFields $optderiving) =>
+  let declmods' := match declmodifiers_stx_prism.preview declmods with
+  | .none => ⟨0, .false, 0⟩
+  | .some x => x
+  let declid' := match declid with
+  | `(declId|$x:ident) => x.getId
+  | _ => .anonymous
   let fields' := match fields with
   | `(Lean.Parser.Command.structFields|$x*) => x.filterMap structure_field_stx_prism.preview
   | _ => #[]
   let optderiving' : Array Syntax := match optderiving with
   | `(Lean.Parser.Command.optDeriving|deriving $x,*) => x
   | _ => #[]
-  .inr ⟨declmods, declid, optdeclsig, fields', optderiving'⟩
+  .inr ⟨declmods', declid', optdeclsig, fields', optderiving'⟩
 | x => .inl x
 
 def structure_stx_prism_build : StructureStx -> Syntax :=
   fun ⟨declmods, declid, optdeclsig, fields, optderiving⟩ =>
+  let declmods' := declmodifiers_stx_prism.review declmods
   let optderiving' : Option (TSyntax ``Lean.Parser.Command.optDeriving) := if optderiving.isEmpty
     then Option.none
     else Option.some <| MacroM.tstx `(Lean.Parser.Command.optDeriving|deriving $(.mk optderiving),*)
-  let optdeclsig' : Option (TSyntax `Lean.Parser.Term.typeSpec) := optdeclsig.elim .none (fun stx => .some (.mk stx))
-  let fields' : TSyntax `Lean.Parser.Command.structFields := MacroM.tstx `(Lean.Parser.Command.structFields| $(.mk <| fields.map structure_field_stx_prism.review)*)
+  let optdeclsig' : Option (TSyntax `Lean.Parser.Term.typeSpec) := optdeclsig.elim 
+    .none 
+    (fun stx => .some <| .mk (MacroM.stx `(Lean.Parser.Term.typeSpec|: $(.mk stx))))
+  let fields' : TSyntax `Lean.Parser.Command.structFields := MacroM.tstx 
+    `(Lean.Parser.Command.structFields| $(.mk <| fields.map structure_field_stx_prism.review)*)
   match optderiving', fields.isEmpty with
-  | .none, .false => MacroM.stx `($(.mk declmods) structure $(.mk declid) $[$optdeclsig']? where)
-  | .some _, .false => .missing
-  | .none, .true => MacroM.stx `($(.mk declmods) structure $(.mk declid) $[$optdeclsig']? where $fields':structFields)
-  | .some x, .true => MacroM.stx `($(.mk declmods) structure $(.mk declid) $[$optdeclsig']? where $fields':structFields $x)
+  | .none, .false => MacroM.stx `($(.mk declmods'):declModifiers structure $(.mk (mkCIdent declid)):ident $[$optdeclsig']? where $fields':structFields)
+  | .some x, .false => MacroM.stx `($(.mk declmods'):declModifiers structure $(.mk (mkCIdent declid)):ident $[$optdeclsig']? where $fields':structFields $x)
+  | .none, .true => MacroM.stx `($(.mk declmods'):declModifiers structure $(.mk (mkCIdent declid)):ident $[$optdeclsig']? where $fields':structFields)
+  | .some x, .true => MacroM.stx `($(.mk declmods'):declModifiers structure $(.mk (mkCIdent declid)):ident $[$optdeclsig']? where $fields':structFields $x)
+
 
 def structure_stx_prism : Prism' StructureStx Syntax :=
   .mk structure_stx_prism_build structure_stx_prism_match
@@ -232,9 +306,23 @@ def structure_stx_prism : Prism' StructureStx Syntax :=
 def structure_stx_fields : Lens' (Array StructureFieldStx) StructureStx :=
   .mk StructureStx.fields ({ . with fields := · })
 
-def structure_stx_declid : Lens' Syntax StructureStx :=
+def structure_stx_declid : Lens' Name StructureStx :=
   .mk StructureStx.declid ({ · with declid := · })
+/-
+def mystructstx : StructureStx where
+  declmods := ∅
+  declid := `hi
+  optdeclsig := .some <| MacroM.stx `(Nat -> Nat)
+  fields := #[⟨.simple, mkCIdent `myfield, MacroM.stx `(Nat -> Nat)⟩]
+  optderiving := #[]
 
+#run_elab
+  let declmods : DeclModifiers := ∅ 
+  let declmods_as_stx := declmodifiers_stx_prism.review declmods
+  let stx <- `($(.mk declmods_as_stx):declModifiers structure hi where)
+  dbg_trace <- ppCategory `command stx
+  dbg_trace <- ppCategory `command <| structure_stx_prism.review mystructstx
+-/
 end Structure
 /-
 def ctortype1 := MacroM.stx `(Unit -> Nat -> mytype String)
