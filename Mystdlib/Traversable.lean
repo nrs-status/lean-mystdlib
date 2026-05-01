@@ -1,10 +1,6 @@
 import Mathlib.Control.Traversable.Basic
-import Mathlib.Control.Functor
+import Mystdlib.Functor
 
-instance
-  [Functor G]
-  [Functor F]
-  : Functor (G ∘ F) := (inferInstance : Functor (Functor.Comp G F))
 
 instance
   [Traversable G]
@@ -12,16 +8,9 @@ instance
   : Traversable (G ∘ F) where
     traverse := fun f x => (Traversable.traverse (Traversable.traverse f)) x
 
-
-instance : Functor (Prod α) where
-  map := fun f x => (x.fst, f x.snd)
-
 instance : Traversable (Prod.{u,u} α) where
   traverse :=
     fun f x => Functor.map (x.fst, ·) (f x.snd)
-
-instance : Functor (Vector · n) where
-  map := fun f ⟨l, h⟩ => ⟨Array.map f l, by grind⟩
 
 def Array.traverse
   [Applicative t]

@@ -5,7 +5,7 @@ open Std
 universe u
 variable {α : Type u} [BEq α] [Hashable α] [DecidableEq α]
 
-def Std.HashSet.subset? (sa sb : HashSet α) : Bool :=
+def Std.HashSet.isSubset (sa sb : HashSet α) : Bool :=
   sa.inter sb == sa
 
 variable [EquivBEq α]  [LawfulHashable α] [LawfulBEq α]

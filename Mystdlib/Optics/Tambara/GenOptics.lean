@@ -51,7 +51,7 @@ elab "#genprisms" c:command : command =>
   match inductive_stx_prism.preview c with
   | .some x => do
     let := x.ctors
-    |>.map (fun ctor => prismdefOfInductiveAlt (mkCIdent x.declid.nm) (mkCIdent ctor.nm) (arrow_iso_stx.review.{0,0} ctor.rhs.someD))
+    |>.map (fun ctor => prismdefOfInductiveAlt (mkCIdent x.declid.nm) (mkCIdent ctor.nm) (arrow_iso_stx.review.{0,0} ctor.rhs.orDflt))
     |>.map def_stx_prism.review
     elabCommand c
     this.forM (fun s => do dbg_trace <- liftCoreM <| Lean.PrettyPrinter.ppCategory `command s; elabCommand s)

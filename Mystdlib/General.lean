@@ -1,48 +1,15 @@
+import Mathlib.Control.Bifunctor
 import Lean
+
+-- ergonomics
 
 export Function (curry uncurry)
 
-instance [Inhabited x] : Inhabited (x ⊕ y) where
-  default := .inl default
-
-instance [Inhabited y] : Inhabited (x ⊕ y) where
-  default := .inr default
-
-
-def Prod.assoc : α × β × γ -> (α × β) × γ :=
-  fun (a, b, c) => ((a, b), c)
-
-def Prod.assoc_inv : (α × β) × γ -> α × β × γ :=
-  fun ((a, b), c) => (a, b, c)
-
-def Sum.assoc : α ⊕ β ⊕ γ -> (α ⊕ β) ⊕ γ :=
-  Sum.elim (.inl ∘ .inl) (Sum.elim (.inl ∘ .inr) .inr)
-
-def Sum.assoc_inv : (α ⊕ β) ⊕ γ -> α ⊕ β ⊕ γ :=
-  Sum.elim (Sum.elim .inl (.inr ∘ .inl)) (.inr ∘ .inr)
+export Bifunctor (bimap)
 
 abbrev fmap [Functor F] (f : α -> β) (xfα : F α) : F β := Functor.map f xfα
 
-
-instance [instf : Applicative F] [instg : Applicative G] : Applicative (G ∘ F) where
-    pure := fun a => let aux := instg.pure a; let r := fmap instf.pure aux; r
-    seq := fun f g =>   instg.seq (fmap (fun f' g' => instf.seq f' (fun _ => g')) f) g
-
-
-def Monad.join [Monad m] : m (m α) -> m α :=
-  fun xm => do (<- xm)
-
-instance : Monad List where
-  pure := ([·])
-  bind := fun l f => List.flatten (fmap f l)
-
-
-def mapA_attaching {m : Type u → Type v} [Applicative m] {α : Type w} {β : Type u} (f : α → m β) : { l : List α // l.length = n } -> m { l : List β // l.length = n } :=
-  fun ⟨l, p⟩ => match l with
-  | []    => pure ⟨∅, by simp at p; simpa⟩
-  | .cons a as => 
-    fmap (fun b x => ⟨.cons b x.1, by grind⟩) (f a) <*> mapA_attaching f ⟨as, rfl⟩
-
+--
 
 def amp (x : α) (f : α -> β) : β := f x
 
@@ -123,7 +90,3 @@ macro_rules
 
 
 --
-
-def Option.someD [Inhabited α] : Option α -> α
-| .some a => a
-| .none => default

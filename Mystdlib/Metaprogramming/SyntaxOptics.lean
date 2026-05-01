@@ -316,7 +316,7 @@ def ctor_stx_prism_match : Syntax -> Syntax ⊕ Ctor :=
       (· matches .ident ..),
       (Syntax.isOfKind · ``optDeclSig)
       ] stx
-    .inr ⟨declmodifiers_stx_prism.preview this[0]! |>.someD, this[1]!.getId, optdeclsig_stx_prism.preview this[2]! |>.someD⟩
+    .inr ⟨declmodifiers_stx_prism.preview this[0]! |>.orDflt, this[1]!.getId, optdeclsig_stx_prism.preview this[2]! |>.orDflt⟩
   else .inl stx
   | _ => .inl stx
 
@@ -327,13 +327,14 @@ def ctor_stx_prism_build : Ctor -> Syntax
 def ctor_stx_prism : Prism' Ctor Syntax :=
   .mk ctor_stx_prism_build ctor_stx_prism_match
 
+/-
 #run_elab
   let stx := ctor_stx_prism.review ⟨default, `myctor, .some (MacroM.stx `(Nat), [MacroM.stx `(mytype)])⟩
   let r := ctor_stx_prism.preview stx |>.someD
   dbg_trace repr r
   let stx' <- `(inductive mytype $(.mk stx):ctor)
   dbg_trace <- ppCategory `command stx'
-
+-/
 end Ctor
 
 section Inductive
@@ -350,8 +351,8 @@ deriving Repr, Inhabited
 def inductive_stx_prism_match : Syntax -> Syntax ⊕ InductiveStx
 | `(Lean.Parser.Command.declaration|$declmods inductive $declid $[$optdeclsig]? where $ctors* $[$cfields]? $optderiving)
 | `(Lean.Parser.Command.declaration|$declmods inductive $declid $[$optdeclsig]? $ctors* $[$cfields]? $optderiving) => 
-  let declid' := declid_stx_prism.preview declid |>.elim default id
-  let declmods' := declmodifiers_stx_prism.preview declmods |>.elim default id
+  let declid' := declid_stx_prism.preview declid |>.orDflt
+  let declmods' := declmodifiers_stx_prism.preview declmods |>.orDflt
   let ctors' := ctors.filterMap ctor_stx_prism.preview
   let optderiving' : Array Syntax := match optderiving with
   | `(Lean.Parser.Command.optDeriving|deriving $x,*) => x.getElems
@@ -415,8 +416,8 @@ deriving Repr
 
 def structure_stx_prism_match : Syntax -> Syntax ⊕ StructureStx
 | `(Lean.Parser.Command.declaration|$declmods structure $declid $[$optdeclsig]? where $fields:structFields $optderiving) =>
-  let declmods' := declmodifiers_stx_prism.preview declmods |>.elim default id
-  let declid' := declid_stx_prism.preview declid |>.elim default id
+  let declmods' := declmodifiers_stx_prism.preview declmods |>.orDflt
+  let declid' := declid_stx_prism.preview declid |>.orDflt
   let fields' := match fields with
   | `(Lean.Parser.Command.structFields|$x*) => x.filterMap structure_field_stx_prism.preview
   | _ => #[]
