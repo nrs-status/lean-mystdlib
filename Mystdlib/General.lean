@@ -1,7 +1,10 @@
+import Mathlib.Logic.Function.Defs
 import Mathlib.Control.Bifunctor
 import Lean
 
--- ergonomics
+--
+
+notation f " ∘₂ " g => Function.bicompr f g
 
 export Function (curry uncurry)
 

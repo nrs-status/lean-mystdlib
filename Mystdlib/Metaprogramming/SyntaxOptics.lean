@@ -1,5 +1,8 @@
-import Mystdlib.Optics.Tambara
-import Mystdlib.Metaprogramming.General
+import Mystdlib.Optics.Tambara.Combinators
+import Mystdlib.Optics.Tambara.Traversal
+import Mystdlib.Optics.Tambara.Plated
+
+import Mystdlib.Metaprogramming.Misc
 import Mathlib.Data.List.TakeWhile
 
 open Lean
