@@ -122,3 +122,8 @@ macro_rules
 | `($x %fun| $y => $z) => `(fun | $y => $z | v => $x v)
 
 
+--
+
+def Option.someD [Inhabited α] : Option α -> α
+| .some a => a
+| .none => default

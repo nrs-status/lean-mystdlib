@@ -45,6 +45,22 @@ def Traversal.traverseOf' -- universe polymorphic version, needed when using ExO
     have := this (ULift.up ∘ f) s
     ULift.down this
 
+instance {F : _} [Applicative F] : Tamb ⟨App Traversable, ax⟩ (fun x _ => x -> F PUnit) where
+  tamb := fun {xμ _ _} f x =>
+    have := xμ.snd.traverse f x
+    Functor.map (fun _ => .unit) this 
+
+def Traversal.sequence
+  {α β ς τ : Type v}
+  (x : Traversal α β ς τ)
+  : {F : Type v -> Type v} -> [Applicative F] -> (α -> F PUnit) -> ς -> F PUnit
+  := fun {F _} => x (fun x _ => x -> F PUnit)
+
+def Traversal.extract
+  (x : Traversal α β ς τ)
+  :=
+  x.traverseOf Bazaar.sell
+
 
 def traverseOfExtract -- for educational purposes; unpacking definitions
   [Applicative F]

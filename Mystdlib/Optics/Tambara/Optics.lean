@@ -132,10 +132,6 @@ def ExTraversal.extract
   := match x with
   | ExOptic.mk (xμ := xμ) l r => (Functor.map r) ∘ xμ.snd.traverse Bazaar.sell ∘ l
 
-def Traversal.extract
-  (x : Traversal α β ς τ)
-  : ς -> Bazaar α β τ
-  := ExTraversal.extract <| ProfOptic.toExOptic ⟨App Traversable, App Traversable⟩ NatTsfm traversableComp x
 
 
 

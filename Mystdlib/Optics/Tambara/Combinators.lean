@@ -230,6 +230,7 @@ def Tamb.ProfOptic.toListOf
 
 end
 
+
 def Aggregating (α β ς τ : Type u) := List ς -> (List α -> β) -> τ
 
 instance : Profunctor (Aggregating α β) where
