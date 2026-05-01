@@ -90,13 +90,13 @@ def syntax_ident : Prism' (SourceInfo × Substring.Raw × Name × List Syntax.Pr
 end Matchers
 
 
-partial def full_stx_traversalVL : TraversalVL' Syntax Syntax :=
+partial def syntax_traversalVL : TraversalVL' Syntax Syntax :=
   fun _ _ f x => match x with
   | .node _ _ rest =>
-    (fun head rest' => match head with | .node x y _ => .node x y rest' | x => x) <$> f x <*> rest.traverse (full_stx_traversalVL _ f)
+    (fun head rest' => match head with | .node x y _ => .node x y rest' | x => x) <$> f x <*> rest.traverse (syntax_traversalVL _ f)
   | _ => f x
 
-def full_stx_traversal : Traversal' Syntax Syntax := TraversalVL.toTraversal full_stx_traversalVL
+def syntax_traversal : Traversal' Syntax Syntax := TraversalVL.toTraversal syntax_traversalVL
 
 def syntax_nodes_traversal : Traversal' Syntax Syntax :=
   .mk'' fun
@@ -124,8 +124,6 @@ def prod_iso_stx_from : Syntax × List Syntax -> Syntax
 def prod_iso_stx : Iso' (Syntax × List Syntax) Syntax :=
   .mk prod_iso_stx_to prod_iso_stx_from
 
-#run_elab
-  let stx <- `(
 
 end Prod
 
