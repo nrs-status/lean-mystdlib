@@ -10,6 +10,10 @@ export Function (curry uncurry)
 
 export Bifunctor (bimap)
 
+-- to do e.g. |>.foldl.flip
+def Function.flip {α : Sort u} {β : Sort v} {φ : Sort w} (f : α → β → φ) :
+β → α → φ := _root_.flip f
+
 abbrev fmap [Functor F] (f : α -> β) (xfα : F α) : F β := Functor.map f xfα
 
 --
