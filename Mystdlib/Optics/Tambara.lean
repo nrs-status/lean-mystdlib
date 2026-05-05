@@ -8,3 +8,4 @@ import Mystdlib.Optics.Tambara.Each
 import Mystdlib.Optics.Tambara.Tuple
 import Mystdlib.Optics.Tambara.Traversal
 import Mystdlib.Optics.Tambara.GenOptics
+import Mystdlib.Optics.Tambara.Cons

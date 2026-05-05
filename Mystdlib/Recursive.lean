@@ -1,4 +1,8 @@
 
+/-
+replaced by Plated in Optics.Tambara
+-/
+
 class Recursive (α : Type) where
   ctor_aux : Type -- required for reconstruction after recursing
   recur_info : α -> Option (ctor_aux × Array α)
