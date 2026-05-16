@@ -36,3 +36,6 @@ def mapA_attaching {m : Type u → Type v} [Applicative m] {α : Type w} {β : T
   | .cons a as => 
     Functor.map (fun b x => ⟨.cons b x.1, by grind⟩) (f a) <*> mapA_attaching f ⟨as, rfl⟩
 
+
+instance : HDiv Nat Nat Float where
+  hDiv := fun x y => x.toFloat / y.toFloat
