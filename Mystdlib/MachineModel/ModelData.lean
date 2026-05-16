@@ -69,8 +69,6 @@ def sfree
   (data : ModelData spec)
   (h : ¬ data.stackAllocs.isEmpty)
   : ModelData spec := { data with
-    programLayout := data.programLayout.retractStack (data.stackAllocs.head (by grind)).length <| by
-      have := data.programLayout.statics_wf.stack_wrt_end
-      skip
+    programLayout := data.programLayout.retractStack (data.stackAllocs.head (by grind)).length sorry
   }
 
