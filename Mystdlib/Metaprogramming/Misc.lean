@@ -1,3 +1,4 @@
+import Mathlib.Lean.Meta.Simp
 import Lean
 
 open Lean
@@ -46,3 +47,16 @@ def getLamVarsUserNames (lam_expr : Expr) : MetaM (Array String) := do
 def getLamConstVarsUserNames (nm : Name) : MetaM (Array String) := do
   let constInfo <- getConstInfoDefn nm
   getLamVarsUserNames constInfo.value
+
+--
+section
+
+open Elab Command
+
+instance : MonadLiftT TermElabM CommandElabM where
+  monadLift := liftTermElabM
+
+instance : MonadLiftT MetaM CommandElabM where
+  monadLift := fun x => liftTermElabM x
+
+end

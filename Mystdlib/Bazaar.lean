@@ -67,3 +67,7 @@ def Bazaar.sold
   := match x with
   | ⟨_, elements, continuation⟩ => continuation elements
 
+def Bazaar.ofArray (ar : Array α) : Bazaar α α (Array α) :=
+  .mk ar.size ⟨ar, rfl⟩ Vector.toArray
+
+

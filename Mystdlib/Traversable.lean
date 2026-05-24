@@ -43,5 +43,9 @@ def Vector.traverse
 instance : Traversable (Vector · n) where
   traverse := Vector.traverse
 
+def mapIdx_aux (f : α -> Nat -> β) : α -> StateM Nat β :=
+  fun a => modifyGet fun i => (f a i, i.succ)
 
+def mapIdx [Traversable t] (f : α -> Nat -> β) (start_i : Nat) : t α -> t β :=
+  fun xta => Traversable.traverse (mapIdx_aux f) xta start_i |>.fst
 

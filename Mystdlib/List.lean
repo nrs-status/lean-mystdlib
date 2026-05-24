@@ -187,6 +187,11 @@ theorem flatMap_subset_iff_forall_mem_apply_subset
   : l.flatMap f ⊆ l' <-> ∀a ∈ l, f a ⊆ l' := by
     grind
 
+instance {l l' : List α} [DecidablePred (· ∈ l)] [DecidablePred (· ∈ l')] : Decidable (l.Disjoint l') := by 
+  simp [Disjoint]
+  infer_instance
+
+
   
 
 instance : Trans (α := List α) (β := List α) (γ := List α) List.Subset List.Subset List.Subset  where
@@ -204,7 +209,10 @@ theorem Pairwise.rel_getLast_norefl
     apply List.Pairwise.rel_dropLast_getLast (h := h)
     grind [List.mem_dropLast_of_mem_of_ne_getLast]
 
-      
+
+def finIdxOf [BEq α] [PartialEquivBEq α] [LawfulBEq α] (a : α) (l : List α) (h : a ∈ l) : Fin l.length :=
+  let r := l.finIdxOf? a
+  r.get (by grind)
 
     
     

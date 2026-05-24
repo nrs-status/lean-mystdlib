@@ -5,8 +5,14 @@ defaultTargets = ["mystdlib"]
 [[lean_lib]]
 name = "Mystdlib"
 
+# [[require]]
+# name = "mathlib"
+# git = "https://github.com/leanprover-community/mathlib4-nightly-testing"
+# rev = "8cc4b4c075883b8f26f81031159c19bb6505ef23"
+
 [[require]]
-name = "mathlib"
-git = "https://github.com/leanprover-community/mathlib4-nightly-testing"
-rev = "f80b5e44ea5c7ba214391d936e993462fb1f0e0a"
+name = "cslib"
+scope = "leanprover"
+rev = "b31f311ccff29c68ce4146f2bed46fa446870dba"
+
 

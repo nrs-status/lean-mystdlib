@@ -36,6 +36,7 @@ def recur_stx_elab : TermElab := fun _ et => do
 
 --
 
+-- typehole that reduces the type
 syntax (name := holeModReduction_pdescr) "_r" : term
 
 open Lean Elab Term in

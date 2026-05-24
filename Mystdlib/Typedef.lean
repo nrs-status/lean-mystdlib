@@ -61,6 +61,7 @@ section
 
 open private checkNoInductiveNameConflicts elabInductiveViews FinalizeContext from Lean.Elab.MutualInductive
 
+
 def elabMutualInductiveInfo (elems : Array Syntax) := show CommandElabM _ from do
   let inductives <- elems.mapM fun stx => do
     let modifiers <- elabModifiers ⟨stx[0]⟩

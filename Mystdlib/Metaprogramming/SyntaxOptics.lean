@@ -146,6 +146,21 @@ def tuple_iso_stx : Iso' (Syntax × List Syntax) Syntax :=
 
 end Tuple
 
+section List
+def list_prism_match : Syntax -> Syntax ⊕ List Syntax
+| `([$x,*]) => .inr x.getElems.raw.toList
+| x => .inl x
+
+def list_prism_build : List Syntax -> Syntax
+| .nil => MacroM.stx `([])
+| l => MacroM.stx `([$(Lean.Syntax.TSepArray.ofElems <| l.toArray.map .mk),*])
+
+def list_prism : Prism' (List Syntax) Syntax :=
+  .mk list_prism_build list_prism_match
+
+end List
+
+
 
 
 inductive bracketedBinderKind | explicit | implicit | strict_implicit | instance_implicit
@@ -523,3 +538,96 @@ def mystructstx : StructureStx where
   dbg_trace <- ppCategory `command stx
   dbg_trace <- ppCategory `command <| structure_stx_prism.review mystructstx
 -/
+
+section Thm
+
+structure ThmStx where
+  declmods : DeclModifiers := default
+  declid : DeclId
+  typespec : Syntax
+  body : Syntax
+
+def thm_stx_prism_match : Syntax -> Syntax ⊕ ThmStx
+| `(Lean.Parser.Command.declaration|$declmods theorem $declid : $typespec := $body) =>
+  let declmods' := declmodifiers_stx_prism.preview declmods |>.elim default id
+  let declid' := declid_stx_prism.preview declid |>.elim default id
+  .inr ⟨declmods', declid', typespec, body⟩
+| x => .inl x
+
+def thm_stx_prism_build : ThmStx -> Syntax
+| ⟨declmods, declid, typespec, body⟩ => 
+  let declmods' := declmodifiers_stx_prism.review declmods
+  let declid' := declid_stx_prism.review declid
+  let body' := MacroM.tstx `(declVal|:= $(.mk body))
+  MacroM.stx `($(.mk declmods'):declModifiers theorem $(.mk declid'):declId : $(.mk typespec) $body':declVal)
+
+def thm_stx_prism : Prism' ThmStx Syntax :=
+  .mk thm_stx_prism_build thm_stx_prism_match
+
+end Thm
+
+
+section Simp
+
+def simp_nm_prism_match : Syntax -> Syntax ⊕ List Name := fun stx => match stx with
+| `(tactic|simp $[[$y,*]]?) => match y with
+  | .some y' =>
+    let r := y'.getElems.raw.map (fun | `(Lean.Parser.Tactic.simpLemma|$x:term) => if x.raw.isIdent then Option.some (Lean.Elab.Tactic.getNameOfIdent' x) else Option.none | _ => .none)
+    if r.all Option.isSome then .inr r.reduceOption.toList else .inl stx
+  | .none => .inr []
+| x => .inl x
+
+def simp_nm_prism_build : List Name -> Syntax
+| .nil => MacroM.stx `(tactic|simp)
+| l =>
+  let r : List (TSyntax ``Lean.Parser.Tactic.simpLemma) := 
+    l.map (fun s => MacroM.tstx `(Lean.Parser.Tactic.simpLemma|$(.mk <| Lean.mkCIdent s):term))
+  MacroM.stx `(tactic|simp [$(Syntax.TSepArray.ofElems r.toArray),*])
+
+def simp_nm_prism : Prism' (List Name) Syntax :=
+  .mk simp_nm_prism_build simp_nm_prism_match
+
+end Simp
+
+section Rw
+
+def rw_nm_prism_match : Syntax -> Syntax ⊕ (Name × List Name) := fun stx => match stx with
+| `(tactic|rw [$y,*]) =>
+  let head := match y.getElems.raw[0]! with
+  | `(Lean.Parser.Tactic.rwRule|$x':term) => Option.some x'
+  | _ => Option.none
+  let tail := y.getElems.raw.toList.tail.map (fun | `(Lean.Parser.Tactic.rwRule|$x:term) => if x.raw.isIdent then Option.some (Lean.Elab.Tactic.getNameOfIdent' x) else Option.none | _ => .none)
+  if h : head.isSome ∧ tail.all Option.isSome then .inr (Lean.Elab.Tactic.getNameOfIdent' <| head.get (by grind), tail.reduceOption) else .inl stx
+| x => .inl x
+
+def rw_nm_prism_build : Name × List Name -> Syntax
+| (nm, l) => 
+  let nm' := MacroM.tstx `(Lean.Parser.Tactic.rwRule|$(.mk <| Lean.mkCIdent nm):term)
+  let l' : List (TSyntax ``Lean.Parser.Tactic.rwRule) :=
+    l.map (fun s => MacroM.tstx `(Lean.Parser.Tactic.rwRule|$(.mk <| Lean.mkCIdent s):term))
+  MacroM.stx `(tactic|rw [$nm', $(Syntax.TSepArray.ofElems l'.toArray),*])
+
+def rw_nm_prism : Prism' (Name × List Name) Syntax :=
+  .mk rw_nm_prism_build rw_nm_prism_match
+
+
+end Rw
+
+section TacticSeq
+
+def tacticSeq_prism_match : Syntax -> Syntax ⊕ List Syntax
+| `(tacticSeq|$x*) => .inr x.getElems.raw.toList
+| x => .inl x
+
+def tacticSeq_prism_build : List Syntax -> Syntax :=
+  fun l => MacroM.tstx `(Lean.Parser.Tactic.tacticSeq|$(Syntax.TSepArray.ofElems <| l.toArray.map .mk)*)
+
+def tacticSeq_prism : Prism' (List Syntax) Syntax :=
+  .mk tacticSeq_prism_build tacticSeq_prism_match
+
+end TacticSeq
+
+
+
+
+
