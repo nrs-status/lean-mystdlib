@@ -43,6 +43,9 @@ def Vector.traverse
 instance : Traversable (Vector · n) where
   traverse := Vector.traverse
 
+instance : Traversable (Functor.Const m) where
+  traverse := fun _ xm => pure xm
+
 def mapIdx_aux (f : α -> Nat -> β) : α -> StateM Nat β :=
   fun a => modifyGet fun i => (f a i, i.succ)
 

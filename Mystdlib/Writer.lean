@@ -1,9 +1,10 @@
+import Mystdlib.State
 import Mathlib.Control.Monad.Writer
+import Mystdlib.Optics.Tambara
 
-
-universe u
-variable (m : Type -> Type u) [Monad m]
-variable (ω : Type) [Append ω] [EmptyCollection ω]
+universe u v
+variable {m : Type u -> Type v} [Monad m]
+variable {ω : Type u} [Append ω] [EmptyCollection ω]
 
 instance [MonadWriter ω m] : MonadWriter ω (OptionT m) where
   tell := fun w => tell (M := m) w
@@ -26,5 +27,13 @@ instance [MonadWriter ω m] : MonadWriter ω (ExceptT ε m) where
 instance [MonadExceptOf ε m] : MonadExceptOf ε (WriterT ω m) where
   throw := throw 
   tryCatch := tryCatch
+
+instance [MonadStateOfLens ω m] [Append ω] : MonadWriter ω m where
+  tell := fun w => do let σ <- getOfLens; setOfLens (σ ++ w)
+  listen := fun x => do let σ <- getOfLens; return (<- x, σ)
+  pass := fun x => do let r <- x; let σ <- getOfLens; setOfLens (r.snd σ); return r.fst
+
+
+
 
 

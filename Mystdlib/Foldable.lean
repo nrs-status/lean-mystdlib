@@ -49,9 +49,6 @@ instance : Foldable (Functor.Const m) where
   foldMap := fun _ _ => mempty
   foldl := fun _ b _ => b
 
-instance : Traversable (Functor.Const m) where
-  traverse := fun _ xm => pure xm
-
 def flatMap [Foldable t] (f : α -> Array β) (as : t α) : Array β :=
   Foldable.foldl (fun bs a => bs ++ f a) ∅ as
 
@@ -78,7 +75,6 @@ instance : Filterable Array where
   filterMap := Array.filterMap
   reduceOption := Array.reduceOption
 
-
 instance [Monoid m] : One m where
   one := Monoid.mempty
 
@@ -89,5 +85,9 @@ instance [Traversable t] : Foldable t where
   foldMap := Traversable.foldMap
   foldr := Traversable.foldr
   foldl := Traversable.foldl
+
+def filter [Filterable F] (p : α -> Bool) : F α -> F α :=
+  filterMap (fun a => if p a then .some a else .none)
+
 
 

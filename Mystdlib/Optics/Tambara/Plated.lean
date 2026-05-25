@@ -3,7 +3,7 @@ import Mystdlib.Optics.Tambara.Optics
 import Mystdlib.Optics.Tambara.Traversal
 import Mathlib.Data.List.TakeWhile
 
-open Tamb
+namespace Tamb
 
 class Plated α where
   plate : Traversal' α α
