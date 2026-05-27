@@ -5,6 +5,8 @@ deriving instance TypeName for Bool
 deriving instance TypeName for Nat
 deriving instance TypeName for Int
 deriving instance TypeName for Lean.Expr
+deriving instance TypeName for Lean.Syntax
+deriving instance TypeName for Lean.Name
 
 instance : Inhabited Dynamic where
   default := Dynamic.mk Nat.zero
