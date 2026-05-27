@@ -98,3 +98,7 @@ macro_rules
 
 
 --
+
+syntax:max (name := simp_exact_pdescr) term ";s!" : term
+macro_rules
+| `($x;s!) => `(by simp; exact $x)
