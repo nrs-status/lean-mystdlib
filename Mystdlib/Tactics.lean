@@ -1,4 +1,4 @@
-
+import Std
 
 syntax:max (name := close_pdescr) "close" : tactic
 macro_rules
@@ -16,3 +16,10 @@ attribute [grind .] Array.isEmpty_iff_size_eq_zero
 
 -- List grinset
 attribute [grind .] List.isEmpty_iff_length_eq_zero
+
+-- HashSet grindset
+
+attribute [grind .] Std.HashSet.mem_of_mem_union_of_not_mem_left
+attribute [grind .] Std.HashSet.mem_of_mem_union_of_not_mem_right
+attribute [grind .] Std.HashSet.mem_union_of_left
+attribute [grind .] Std.HashSet.mem_union_of_right
