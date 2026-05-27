@@ -98,26 +98,27 @@ def Raw.size : Raw α β -> Nat
 variable {α} in
 theorem array_last_is_same {ar : Array α} : (h : 0 < ar.pop.size) -> (h' : 1 < ar.size) -> ar[0] = ar.pop[0] := by grind
 
+
 def Raw.upsert [DecidableEq α] (t : Raw α β) (keys : Array α) (h : 0 < keys.size) (f : Option (β keys[0]) -> β keys[0]) : Raw α β := 
   match h' : t with
   | .nil => 
     if h'' : keys.pop.isEmpty
     then .cons keys[0] (f .none) .nil .nil
     else 
-      have := array_last_is_same (ar := keys) (by grind) (by grind)
-      .cons keys[0] .none (recur .nil keys.pop (by grind) (this ▸ f)) .nil
+      .cons keys[0] .none (recur .nil keys.pop ?_ (cast ?_ f)) .nil
   | .cons a ba subsup spine_tail =>
     if h'' : a = keys.back h
     then if h''' : keys.pop.isEmpty
       then 
-        have h'''' : a = keys[0] := by grind
-        .cons a (.some (h'''' ▸ f (h'''' ▸ ba))) subsup spine_tail
+        .cons a (.some (cast ?_ <| f (cast ?_ ba))) subsup spine_tail
       else 
-        have := array_last_is_same (ar := keys) (by grind) (by grind)
-        .cons a ba (recur subsup keys.pop (by grind) (this ▸ f)) spine_tail
+        .cons a ba (recur subsup keys.pop ?_ (cast ?_ f)) spine_tail
     else 
-      .cons a ba subsup (recur spine_tail keys !p f)
+      .cons a ba subsup (recur spine_tail keys ?_ f)
 termination_by keys.size + t.size
+where finally
+  all_goals grind
+  
   
 def Raw.insert [DecidableEq α] (t : Raw α β) (keys : Array α) (h : 0 < keys.size) (v : β keys[0]) := t.upsert keys h (fun _ => v)
     
