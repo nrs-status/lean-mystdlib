@@ -1,37 +1,23 @@
 import Mystdlib.General
-import Mystdlib.Rose.BFinVec
+import Mathlib.Data.W.Basic
+import Mystdlib.Mathlib.Encodable
 
 structure Univ where
   codeNodes : List String
-  arities : { str // str ∈ codeNodes } -> Nat
-  decode : Rose arities -> Type u
+  arities : { str // str ∈ codeNodes } -> Type
+  decode : WType arities -> Type u
 
-abbrev Univ.Code (univ : Univ) := Rose univ.arities
+abbrev Univ.Code (univ : Univ) := WType univ.arities
+
+def Univ.Code.decode {univ : Univ} (enc : univ.Code) := univ.decode enc
 
 syntax:max (name := encode_pdescr) ident "#" : term
 macro_rules
 | `($(x):ident#) => `(⟨$(Lean.Syntax.mkStrLit x.getId.toString)<:, nofun⟩)
 
 class Codable (α : Type u) (univ : Univ) where
-  encode : Rose univ.arities
+  encode : WType univ.arities
   wf : univ.decode encode = α := by simp
-
-class Constraint (univ : Univ.{u}) (encoding : univ.Code) (class_ : Type u -> Type v) where
-  infer : Option (class_ (univ.decode encoding))
-
-instance : Constraint univ encoding class_ where
-  infer := .none
-
-instance [inst : Codable α univ] [Repr α] : Constraint univ inst.encode Repr :=
-  have := Eq.symm (Codable.wf (α := α) (univ := univ))
-  ⟨.some <| this ▸ inferInstance⟩
-
-def Univ.repr {univ : Univ} {encoding : univ.Code} [inst : Constraint univ encoding Repr] (x : univ.decode encoding) : Option (Std.Format) :=
-  match inst.infer with
-  | .none => .none
-  | .some _ => _root_.repr x
-
-
 
 namespace BasicUniv
 
@@ -39,13 +25,13 @@ namespace BasicUniv
 def codeNodes := ["nat", "bool", "unit", "empty", "string", "format", "syntax", "expr", "name", "array", "list"]
 
 @[grind]
-def arities : { str // str ∈ codeNodes } -> Nat :=
+def arities : { str // str ∈ codeNodes } -> Type :=
   fun ⟨str, _⟩ => if str ∈ ["array", "list"]
-  then 1
-  else 0
+  then Unit
+  else Empty
 
 @[simp]
-def decode : Rose arities -> Type :=
+def decode : WType arities -> Type :=
   fun ⟨⟨str, is_elm⟩, v⟩ => if h : str = "nat"
   then Nat
   else if h : str = "bool"
@@ -65,18 +51,42 @@ def decode : Rose arities -> Type :=
   else if h : str = "name"
   then Lean.Name
   else if h : str = "array"
-  then Array (decode (v ⟨0, by grind⟩))
+  then Array (decode (v (cast ?_ Unit.unit)))
   else if h : str = "list"
-  then List (decode (v ⟨0, by grind⟩))
-  else by
+  then List (decode (v (cast ?_ Unit.unit)))
+  else ?_
+where finally
+  · subst h
+    simp [arities]
+  · subst h
+    simp [arities]
+  · exfalso
     simp [codeNodes] at is_elm
-    exfalso; grind
+    grind
 
 @[simp]
 def _root_.BasicUniv : Univ where
   codeNodes := codeNodes
   arities := arities
   decode := decode
+
+instance {σ : { str // str ∈ codeNodes }} : Encodable (arities σ)  := by
+  simp [arities]
+  split <;> infer_instance
+
+instance {σ : { str // str ∈ codeNodes}} : Fintype (arities σ) := by
+  simp [arities]
+  split <;> infer_instance
+
+#synth Encodable (WType arities)
+instance : Encodable BasicUniv.Code := by
+  simp [Univ.Code]
+  infer_instance
+
+instance : DecidableEq BasicUniv.Code := Encodable.decidableEqOfEncodable _
+
+instance : Hashable BasicUniv.Code where
+  hash := hash ∘ (inferInstance : Encodable BasicUniv.Code).encode
 
 instance : Codable Nat BasicUniv where
   encode := nat#
@@ -119,6 +129,7 @@ instance [inst : Codable α BasicUniv] : Codable (List α) BasicUniv where
     simp at *
     grind
 
-
-
 end BasicUniv
+
+
+
