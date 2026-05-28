@@ -10,3 +10,11 @@ macro_rules
   let stx <- `(⟨$x, by simp_all; grind⟩)
   return stx
 
+
+instance [Membership α γ] [BEq α] [Hashable α] [LawfulHashable α] {y : γ} : LawfulHashable y∋ where
+  hash_eq := by
+    intro a b beq
+    simp_all
+    simp [hash]
+    apply LawfulHashable.hash_eq
+    grind

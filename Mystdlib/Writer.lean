@@ -28,11 +28,18 @@ instance [MonadExceptOf ε m] : MonadExceptOf ε (WriterT ω m) where
   throw := throw 
   tryCatch := tryCatch
 
+open MonadStateOfLens in
 instance [MonadStateOfLens ω m] [Append ω] : MonadWriter ω m where
   tell := fun w => do let σ <- getOfLens; setOfLens (σ ++ w)
   listen := fun x => do let σ <- getOfLens; return (<- x, σ)
   pass := fun x => do let r <- x; let σ <- getOfLens; setOfLens (r.snd σ); return r.fst
 
+
+
+/-
+{M : Type u → Type v} {ω σ : Type u} [Monad M] [MonadWriter ω M] : MonadWriter ω (StateT σ M)
+
+-/
 
 
 

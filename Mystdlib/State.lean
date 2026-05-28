@@ -2,6 +2,9 @@ import Mystdlib.Optics.Tambara
 
 open Std
 
+
+namespace MonadStateOfLens
+
 variable {m : Type u -> Type v} [Monad m]
 
 open Tamb
@@ -9,11 +12,10 @@ open Tamb
 class LensClass (α : outParam (Type u)) (ς : Type u) where
   lens : Lens' α ς
 
-class MonadStateOfLens (α : semiOutParam (Type u)) (m : Type u -> Type v)  where
+class _root_.MonadStateOfLens (α : semiOutParam (Type u)) (m : Type u -> Type v)  where
   getOfLens : m α
   setOfLens : α -> m PUnit
   modifyGetOfLens : {γ : Type u} -> (α -> γ × α) -> m γ
-export MonadStateOfLens (getOfLens setOfLens modifyGetOfLens)
 
 instance [inst : MonadStateOf ς m] : MonadStateOfLens ς m where
   getOfLens := inst.get
@@ -34,6 +36,21 @@ instance : LensClass MessageLog Core.State where
 instance : LensClass MessageLog Elab.Command.State where
   lens := .mk Elab.Command.State.messages (fun s msgLog => { s with messages := s.messages ++ msgLog})
 
+end MonadStateOfLens
+
+variable {m : Type -> Type} [Monad m]
+
+section
+
+open Lean
+
+instance [AddErrorMessageContext m] : AddErrorMessageContext (StateT σ m) where
+  add := fun stx msg s => do let r <- AddErrorMessageContext.add stx msg; return (r, s)
 
 
+
+instance [MonadRecDepth m] : MonadRecDepth (StateT σ m) where
+  withRecDepth := fun n xm f => MonadRecDepth.withRecDepth n (xm f)
+  getRecDepth := fun s => do let r <- MonadRecDepth.getRecDepth; return (r,s)
+  getMaxRecDepth := fun s => do let r <- MonadRecDepth.getMaxRecDepth; return (r,s)
 

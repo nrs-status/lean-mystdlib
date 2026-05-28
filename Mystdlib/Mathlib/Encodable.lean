@@ -21,3 +21,14 @@ instance : Encodable String := .ofEquiv _ string_equiv
 
 instance [Encodable α] : Hashable α where
   hash := hash ∘ (inferInstance : Encodable α).encode
+
+instance [inst : Encodable α] : Ord α where
+  compare := fun x y => compare (inst.encode x) (inst.encode y)
+
+instance [Encodable α] : Std.TransOrd α where
+  eq_swap := by
+    simp [compare, compareOfLessAndEq, Ordering.swap]
+    grind
+  isLE_trans := by
+    simp [compare, compareOfLessAndEq, Ordering.isLE]
+    grind
