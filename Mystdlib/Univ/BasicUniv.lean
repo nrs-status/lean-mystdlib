@@ -1,4 +1,4 @@
-import Mystdlib.Univ.Basic2
+import Mystdlib.Univ.Basic
 
 
 namespace BasicUniv

@@ -1,124 +1,149 @@
 import Mystdlib.General
-import Mystdlib.Rose.BFinVec
+import Mathlib.Data.W.Basic
+import Mystdlib.Mathlib.Encodable
+import Mystdlib.Tactics
+import Mystdlib.Mems
+
 
 structure Univ where
-  codeNodes : List String
-  arities : { str // str ∈ codeNodes } -> Nat
-  decode : Rose arities -> Type u
+  codeNodes : Std.HashSet String
+  arities : codeNodes∋ -> Type
+  decode : (σ : codeNodes∋) -> (arities σ -> Type u) -> Type u
 
-abbrev Univ.Code (univ : Univ) := Rose univ.arities
+abbrev Univ.Code (univ : Univ) := WType univ.arities
+
+@[simp, grind]
+def Univ.Code.decode {univ : Univ} (enc : univ.Code) : Type u :=
+  let ⟨a, b⟩ := enc
+  univ.decode a (fun i => recur (b i))
+
+@[simp]
+def merge_arities 
+  (x y : Univ)
+  : (x.codeNodes ∪ y.codeNodes)∋ → Type
+  := fun z =>
+    if h : z.val ∈ x.codeNodes
+    then x.arities ⟨z.val, by grind⟩
+    else if h' : z.val ∈ y.codeNodes
+    then y.arities ⟨z.val, by grind⟩
+    else by grind
+
+@[simp]
+def merge_decode
+  (x y : Univ)
+  : (σ : (x.codeNodes ∪ y.codeNodes)∋) -> (merge_arities x y σ -> Type u) -> Type u :=
+  fun ⟨a, b⟩ c => if h : a ∈ x.codeNodes
+  then x.decode ⟨a, h⟩ (fun i => c (cast ?_ i))
+  else y.decode ⟨a, by grind⟩ (fun i => c (cast ?_ i))
+where finally
+  · simp [merge_arities]; grind
+  · simp [merge_arities]; grind
+
+@[grind, simp]
+def Univ.merge (x y : Univ) : Univ where
+  codeNodes := x.codeNodes ∪ y.codeNodes
+  arities := merge_arities x y
+  decode := merge_decode x y
+
+instance {x y : Univ} [∀σ, Encodable (x.arities σ)] [∀σ, Encodable (y.arities σ)] {σ} : Encodable ((Univ.merge x y).arities σ)  := by
+  simp [Univ.merge, merge_arities]
+  split; infer_instance
+  split; infer_instance
+  grind
+
+instance {x y : Univ} [∀σ, Fintype (x.arities σ)] [∀σ, Fintype (y.arities σ)] {σ} : Fintype ((Univ.merge x y).arities σ) := by
+  simp [Univ.merge, merge_arities]
+  split; infer_instance
+  split; infer_instance
+  grind
+
+instance {x y : Univ} [∀σ, Encodable (x.arities σ)] [∀σ, Encodable (y.arities σ)] [∀σ, Fintype (x.arities σ)] [∀σ, Fintype (y.arities σ)]  : Encodable (Univ.merge x y).Code := by
+  simp [Univ.Code]
+  apply @WType.instEncodable _ _ (fun _ => instFintypeAritiesMerge) (fun _ => instEncodableAritiesMerge)
+
+instance {x y : Univ} [∀σ, Encodable (x.arities σ)] [∀σ, Encodable (y.arities σ)] [∀σ, Fintype (x.arities σ)] [∀σ, Fintype (y.arities σ)] : DecidableEq (Univ.merge x y).Code := Encodable.decidableEqOfEncodable _
+
+instance {x y : Univ} [∀σ, Encodable (x.arities σ)] [∀σ, Encodable (y.arities σ)] [∀σ, Fintype (x.arities σ)] [∀σ, Fintype (y.arities σ)] : BEq (Univ.merge x y).Code := instBEqOfDecidableEq
+
 
 syntax:max (name := encode_pdescr) ident "#" : term
 macro_rules
-| `($(x):ident#) => `(⟨$(Lean.Syntax.mkStrLit x.getId.toString)<:, nofun⟩)
+| `($(x):ident#) => `(⟨$(Lean.Syntax.mkStrLit x.getId.toString)<:, by simp; nofun⟩)
 
 class Codable (α : Type u) (univ : Univ) where
-  encode : Rose univ.arities
-  wf : univ.decode encode = α := by simp
+  encode : univ.Code
+  wf : encode.decode = α := by simp
 
-class Constraint (univ : Univ.{u}) (encoding : univ.Code) (class_ : Type u -> Type v) where
-  infer : Option (class_ (univ.decode encoding))
+def code_merge_lift_left 
+  {x y : Univ}
+  : x.Code -> (x.merge y).Code
+  | ⟨a, b⟩ => ⟨⟨a.val, by grind⟩, fun i => recur (b (cast ?_ i))⟩
+where finally
+  simp [Univ.merge, merge_arities]; grind
 
-instance : Constraint univ encoding class_ where
-  infer := .none
+theorem code_merge_lift_left_wf
+  {x y : Univ}
+  {z : x.Code}
+  : z.decode = (code_merge_lift_left (y := y) z).decode := by
+    induction z; simp [code_merge_lift_left, Univ.Code.decode, Univ.merge, merge_decode]
+    split <;> expose_names
+    · congr 
+      funext
+      grind
+    · exfalso
+      grind
 
-instance [inst : Codable α univ] [Repr α] : Constraint univ inst.encode Repr :=
-  have := Eq.symm (Codable.wf (α := α) (univ := univ))
-  ⟨.some <| this ▸ inferInstance⟩
-
-def Univ.repr {univ : Univ} {encoding : univ.Code} [inst : Constraint univ encoding Repr] (x : univ.decode encoding) : Option (Std.Format) :=
-  match inst.infer with
-  | .none => .none
-  | .some _ => _root_.repr x
-
-
-
-namespace BasicUniv
 
 @[grind]
-def codeNodes := ["nat", "bool", "unit", "empty", "string", "format", "syntax", "expr", "name", "array", "list"]
+class Univ.AritiesAgree (x y : Univ) : Prop where
+  arities_agree : ∀str, (h : str ∈ x.codeNodes) -> (h' : str ∈ y.codeNodes) -> x.arities str<: = y.arities str<:
+
+
+def code_merge_lift_right
+  {x y : Univ}
+  [x.AritiesAgree y]
+  : y.Code -> (x.merge y).Code
+  | ⟨a, b⟩ => ⟨⟨a.val, by grind⟩, fun i => recur (b (cast ?_ i))⟩
+where finally
+  simp [Univ.merge, merge_arities]
+  grind
+
 
 @[grind]
-def arities : { str // str ∈ codeNodes } -> Nat :=
-  fun ⟨str, _⟩ => if str ∈ ["array", "list"]
-  then 1
-  else 0
+class Univ.DecodesAgree (x y : Univ) extends Univ.AritiesAgree x y where
+  decodes_agree : ∀str, (h' : str ∈ x.codeNodes) -> (h'' : str ∈ y.codeNodes) -> (cont : x.arities str<: -> Type u) -> x.decode str<: cont = y.decode str<: (cast !p cont)
+  
+theorem code_merge_lift_right_wf
+  {x y : Univ}
+  {z : y.Code}
+  [x.DecodesAgree y]
+  : z.decode = (code_merge_lift_right (x := x) z).decode := by
+    induction z
+    simp [code_merge_lift_right, Univ.Code.decode, Univ.merge, merge_decode]
+    split <;> expose_names
+    · have := Univ.DecodesAgree.decodes_agree a h a.property
+      simp_all
+      congr
+      rw [eq_cast_iff_heq]
+      apply Function.hfunext <;> grind
+    · congr
+      grind
 
-@[simp]
-def decode : Rose arities -> Type :=
-  fun ⟨⟨str, is_elm⟩, v⟩ => if h : str = "nat"
-  then Nat
-  else if h : str = "bool"
-  then Bool
-  else if h : str = "unit"
-  then Unit
-  else if h : str = "empty"
-  then Empty
-  else if h : str = "string"
-  then String
-  else if h : str = "format"
-  then Std.Format
-  else if h : str = "syntax"
-  then Lean.Syntax
-  else if h : str = "expr"
-  then Lean.Expr
-  else if h : str = "name"
-  then Lean.Name
-  else if h : str = "array"
-  then Array (decode (v ⟨0, by grind⟩))
-  else if h : str = "list"
-  then List (decode (v ⟨0, by grind⟩))
-  else by
-    simp [codeNodes] at is_elm
-    exfalso; grind
-
-@[simp]
-def _root_.BasicUniv : Univ where
-  codeNodes := codeNodes
-  arities := arities
-  decode := decode
-
-instance : Codable Nat BasicUniv where
-  encode := nat#
-
-instance : Codable Bool BasicUniv where
-  encode := bool#
-
-instance : Codable Lean.Syntax BasicUniv where
-  encode := .mk "syntax"<: nofun
-
-instance : Codable Empty BasicUniv where
-  encode := empty#
-
-instance : Codable Unit BasicUniv where
-  encode := unit#
-
-instance : Codable String BasicUniv where
-  encode := string#
-
-instance : Codable Std.Format BasicUniv where
-  encode := format#
-
-instance : Codable Lean.Expr BasicUniv where
-  encode := expr#
-
-instance : Codable Lean.Name BasicUniv where
-  encode := name#
-
-instance [inst : Codable α BasicUniv] : Codable (Array α) BasicUniv where
-  encode := .mk "array"<: (fun x => inst.encode)
+instance [inst : Codable α x] : Codable α (Univ.merge x y) where
+  encode := code_merge_lift_left inst.encode
   wf := by
-    have := inst.wf
-    simp at *
-    grind
+    rw [<- code_merge_lift_left_wf]
+    apply inst.wf
 
-instance [inst : Codable α BasicUniv] : Codable (List α) BasicUniv where
-  encode := .mk "list"<: (fun _ => inst.encode)
-  wf := by
-    have := inst.wf
-    simp at *
-    grind
+instance {x y : Univ} [inst : x.DecodesAgree y] [inst' : Codable α y] : Codable α (Univ.merge x y) where
+    encode := code_merge_lift_right inst'.encode
+    wf := by
+      rw [<- code_merge_lift_right_wf ..]
+      apply inst'.wf
 
 
 
-end BasicUniv
+    
+
+
+
