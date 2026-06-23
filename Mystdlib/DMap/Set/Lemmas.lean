@@ -21,7 +21,7 @@ theorem union_def
   [LawfulBEq α]
   {m m' : Set α}
   : (m ∪ m') = m.insertListIfNew m'.toList := by
-    simp only [Union.union, insertListIfNew, union, Unit.insertListIfNew, Map.union, DMap.Unit.insertListIfNew, DMap.union, DMap.insertList, DMap.Unit.insertListIfNewUnit_eq_insertListIfNew, DMap.Unit.insertListIfNew_eq_insertList, toList, Unit.toList, DMap.Unit.toList, DMap.Const.toList, List.map_map, mk.injEq, Map.mk.injEq, DMap.mk.injEq]
+    simp only [Union.union, insertListIfNew, union, Unit.insertListIfNew, Map.union, DMap.Unit.insertListIfNew, DMap.union, DMap.insertList, List.insertListIfNewUnit_eq_insertListIfNew, List.insertListIfNew_eq_insertList, toList, Unit.toList, DMap.Unit.toList, DMap.Const.toList, List.map_map, mk.injEq, Map.mk.injEq, DMap.mk.injEq]
     suffices (((fun a => (⟨a, ()⟩ : (_ : α) × Unit))) ∘ (fun x => x.fst) ∘ fun x => (x.fst, x.snd)) = id by
       rw [this]
       simp
@@ -101,7 +101,7 @@ theorem insertListIfNew_congr
   (h₂ : l.Perm l')
   (hd : l.Pairwise (fun (a b : α) => (a == b) = false))
   : (s.insertListIfNew l).Equiv (s'.insertListIfNew l') := by
-    simp only [insertListIfNew, Equiv, Unit.insertListIfNew, Map.Equiv, DMap.Unit.insertListIfNew, DMap.Equiv, DMap.Unit.insertListIfNewUnit_eq_insertListIfNew]
+    simp only [insertListIfNew, Equiv, Unit.insertListIfNew, Map.Equiv, DMap.Unit.insertListIfNew, DMap.Equiv, List.insertListIfNewUnit_eq_insertListIfNew]
     suffices (List.insertList (l.map fun a => ⟨a, ()⟩) s.inner.inner.toList).Perm (List.insertList (l'.map fun a => ⟨a, ()⟩) s'.inner.inner.toList) by
       have perm1 := List.insertListIfNew_perm_insertList 
         (l₁ := s.inner.inner.toList)
