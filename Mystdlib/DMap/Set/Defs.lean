@@ -71,3 +71,12 @@ def union
 
 instance [PartialEquivBEq α] : Union (Set α) where
   union := union
+
+def Disjoint (s s' : Set α) : Prop :=
+  s.inner.Disjoint s'.inner
+
+def mapDedup  [BEq β] [PartialEquivBEq β] (s : Set α) (f : α -> β) : Set β :=
+  s.foldl (fun acc next => acc.insertEntry (f next)) ∅
+
+def replaceEntry [PartialEquivBEq α] (k : α) (s : Set α) : Set α :=
+  ⟨s.inner.replaceEntry k .unit⟩

@@ -22,12 +22,12 @@ theorem union_def
   : (m ∪ m') = m.insertList m'.toList := by
     simp [Union.union, union]
 
-theorem mem_iff
+theorem mem_iff_toList_containsKey
   {m : DMap α β}
   {k : α}
-  : k ∈ m <-> m.containsKey k := by
-    simp [Membership.mem]
-
+  : k ∈ m <-> m.toList.containsKey k := by
+    simp [Membership.mem, containsKey]
+ 
 theorem keys_pairwise_not_beq
   {m : DMap α β}
   : m.keys.Pairwise (fun a b => (a == b) = false) := by
@@ -38,7 +38,7 @@ theorem mem_union_disj_of_mem
   {m m' : DMap α β}
   {k : α}
   : k ∈ m ∪ m' <-> k ∈ m ∨ k ∈ m' := by
-    simp only [union_def, mem_iff]
+    simp only [union_def, mem_iff_toList_containsKey]
     rw [<- Bool.or_eq_true_iff, Bool.coe_iff_coe]
     apply List.containsKey_insertList_disj_of_containsKey
 
@@ -67,7 +67,7 @@ theorem mem_of_equiv
   (h : m.Equiv m')
   : k ∈ m <-> k ∈ m' := by
     rw [Equiv] at h
-    simp only [mem_iff, Bool.coe_iff_coe]
+    simp only [mem_iff_toList_containsKey, Bool.coe_iff_coe]
     apply List.containsKey_of_perm h
 
 theorem mem_iff_keys_contains
@@ -75,15 +75,16 @@ theorem mem_iff_keys_contains
   {m : DMap α β}
   {k : α}
   : k ∈ m <-> m.keys.contains k := by
-    simp [mem_iff, containsKey, keys, List.containsKey_eq_keys_contains]
+    simp [mem_iff_toList_containsKey, keys, List.containsKey_eq_keys_contains]
 
 theorem mem_keys_iff_mem
   [LawfulBEq α]
   {m : DMap α β}
   {k : α}
   : k ∈ m.keys <-> k ∈ m := by
-    rw [keys, mem_iff]
+    rw [keys, mem_iff_toList_containsKey]
     apply List.mem_keys_iff_contains
+
 
 theorem insertList_congr
   [EquivBEq α]
@@ -117,7 +118,7 @@ theorem mem_iff_isSome_getValueCast?
   {m : DMap α β}
   {k : α}
   : k ∈ m <-> (m.getValueCast? k).isSome := by
-    simp only [mem_iff, getValueCast?, containsKey, <-Std.Internal.List.containsKey_eq_isSome_getValueCast?]
+    simp only [mem_iff_toList_containsKey, getValueCast?, containsKey, <-Std.Internal.List.containsKey_eq_isSome_getValueCast?]
 
 theorem getValueCast?_eq_some_getValueCast
   [LawfulBEq α]
@@ -156,9 +157,9 @@ theorem isEmpty_iff_forall_mem
   [ReflBEq α]
   {m : DMap α β}
   : m.isEmpty <-> ∀a, ¬ a ∈ m := by
-    simp only [isEmpty, mem_iff]
+    simp only [isEmpty, mem_iff_toList_containsKey]
     rw [List.isEmpty_iff_forall_containsKey]
-    simp [containsKey]
+    simp 
 
 theorem mem_insertEntry_self
   [EquivBEq α]
@@ -166,7 +167,7 @@ theorem mem_insertEntry_self
   {k : α}
   {v : β k}
   : k ∈ m.insertEntry k v := by
-    simp only [mem_iff, containsKey]
+    simp only [mem_iff_toList_containsKey]
     apply List.containsKey_insertEntry_self
 
 theorem mem_insertEntry
@@ -175,7 +176,7 @@ theorem mem_insertEntry
   {k a : α}
   {v : β k}
   : a ∈ m.insertEntry k v <-> k == a ∨ a ∈ m := by
-    simp only [mem_iff, ← Bool.or_eq_true, Bool.coe_iff_coe]
+    simp only [mem_iff_toList_containsKey, ← Bool.or_eq_true, Bool.coe_iff_coe]
     apply List.containsKey_insertEntry
 
 theorem mem_insertEntry_of_mem
@@ -191,7 +192,7 @@ theorem forall_mem_iff_forall_mem_getValueCast
   {ρ : (a : α) -> β a -> Prop}
   {m : DMap α β}
   : (∀x ∈ m.toList, ρ x.fst x.snd) <-> ∀a, (h : a ∈ m) -> ρ a (m.getValueCast a h) := by
-    simp only [mem_iff, getValueCast]
+    simp only [mem_iff_toList_containsKey, getValueCast]
     apply List.forall_mem_iff_forall_contains_getValueCast
     apply m.distinctKeys
 
@@ -233,12 +234,12 @@ theorem ofList_toList_eq_id
     assumption
       
 
-theorem ofList_mem_iff_containsKey
+theorem ofList_mem_iff_toList_containsKey
   [LawfulBEq α]
   {l : List ((a : α) × β a)}
   : ∀a, a ∈ (ofList l) <-> l.containsKey a := by
     intro a
-    simp only [ofList, insertList, mem_iff, containsKey]
+    simp only [ofList, insertList, mem_iff_toList_containsKey]
     constructor
     · intro h
       simp [reverse, <- List.containsKey_reverse_eq, List.containsKey_insertList_disj_of_containsKey] at h
@@ -252,7 +253,7 @@ theorem ofList_getValueCast_eq_getValueCast
   [LawfulBEq α]
   {l : List ((a : α) × β a)}
   (hd : l.DistinctKeys)
-  : ∀a h, (ofList l).getValueCast a h = l.getValueCast a (by simp_all [mem_iff, <- ofList_mem_iff_containsKey]) := by
+  : ∀a h, (ofList l).getValueCast a h = l.getValueCast a (by grind [mem_iff_toList_containsKey, ofList_toList_eq_id]) := by
     intro a h
     simp only [ofList, getValueCast, insertList, reverse]
     apply Std.Internal.List.getValueCast_of_perm 
@@ -302,8 +303,119 @@ theorem getValueCast_union_of_mem_eq_false_left
     apply List.getValueCast_insertList_of_contains_eq_false_left
     · grind [DMap]
     · grind [DMap]
-    · simp [mem_iff, containsKey] at notmem
+    · simp [mem_iff_toList_containsKey] at notmem
       assumption
+
+theorem mem_map
+  {γ : α -> Type w}
+  {f : (a : α) -> β a -> γ a}
+  {m : DMap α β}
+  {k : α}
+  : k ∈ m <-> k ∈ m.map f := by
+    simp [mem_iff_toList_containsKey, map]
+    symm
+    apply List.containsKey_map
+
+theorem containsKey_modifyKey
+  [LawfulBEq α]
+  {k k' : α}
+  {f : β k -> β k}
+  {m : DMap α β}
+  : k' ∈ m.modifyKey k f <-> k' ∈ m := by
+    simp [mem_iff_toList_containsKey]
+    apply Std.Internal.List.containsKey_modifyKey
+
+theorem beq_of_getEntry_eq
+  [PartialEquivBEq α]
+  {m : DMap α β}
+  {k h}
+  : (m.getEntry k h).fst == k := by
+    simp only [getEntry]
+    have := List.beq_of_getEntry_eq 
+      (k := k)
+      (l := m.toList)
+      (p := List.getEntry k m.toList (by grind [mem_iff_toList_containsKey]))
+      (h₁ := by grind [mem_iff_toList_containsKey])
+    grind
+
+theorem getEntry?_eq_getValueCast?
+  [LawfulBEq α]
+  {m : DMap α β}
+  {k : α}
+  : m.getEntry? k = Option.map (fun v => ⟨k, v⟩) (m.getValueCast? k) := by
+    simp only [getEntry?, getValueCast?]
+    apply List.getEntry?_eq_getValueCast?
+
+theorem getEntry?_eq_some_getEntry
+  {m : DMap α β}
+  {k : α}
+  {h}
+  : m.getEntry? k = Option.some (m.getEntry k h) := by
+    simp [getEntry, getEntry?]
+    apply List.getEntry?_eq_some_getEntry
+
+theorem containsKey_eq_isSome_getEntry?
+  {m : DMap α β}
+  {k : α}
+  : k ∈ m <-> (m.getEntry? k).isSome := by
+    simp [mem_iff_toList_containsKey, getEntry?]
+    apply List.containsKey_eq_isSome_getEntry?
+
+theorem snd_eq_getValueCast_of_getEntry?_eq_some
+  [LawfulBEq α]
+  {m : DMap α β}
+  {k : α}
+  (h : m.getEntry? k = some y)
+  : y.snd = cast (have := beq_of_getEntry_eq (m := m) (k := k) (h := (by grind [containsKey_eq_isSome_getEntry?])); by grind [getEntry?_eq_some_getEntry]) (m.getValueCast k (by grind [containsKey_eq_isSome_getEntry?])) := by
+    apply List.snd_eq_getValueCast_of_getEntry?_eq_some
+    simp_all [getEntry?]
+
+theorem getValueCast_eq_getEntry_snd
+  [LawfulBEq α]
+  {m : DMap α β}
+  {k : α}
+  {h}
+  : (m.getEntry k h).snd = cast (by grind [beq_of_getEntry_eq]) (m.getValueCast k h) := by
+    have := getEntry?_eq_some_getEntry (h := h)
+    have := snd_eq_getValueCast_of_getEntry?_eq_some (m := m) (k := k) (y := m.getEntry k h) (by grind)
+    grind
+
+theorem getEntry_eq_key_getValueCast
+  [LawfulBEq α]
+  {m : DMap α β}
+  {k : α}
+  {h}
+  : m.getEntry k h = ⟨k, cast (by grind [beq_of_getEntry_eq]) (m.getValueCast k h)⟩ := by
+    let (eq := eq) ⟨fst, snd⟩ := m.getEntry k h
+    rw [show snd = cast (by grind [beq_of_getEntry_eq]) (m.getEntry k h).snd by grind] at eq
+    simp only [getValueCast_eq_getEntry_snd, cast_cast] at eq
+    grind [beq_of_getEntry_eq]
+
+
+theorem getEntry_mem
+  [LawfulBEq α]
+  {m : DMap α β}
+  {k : α}
+  {h}
+  : m.getEntry k h ∈ m.toList := by
+    apply List.getEntry_mem
+
+theorem mem_of_mem_toList
+  [ReflBEq α]
+  {m : DMap α β}
+  {x : (a : α) × β a}
+  : x ∈ m.toList -> x.fst ∈ m := by
+    simp [mem_iff_toList_containsKey]
+    apply List.containsKey_of_mem
+
+theorem getEntry_of_mem
+  [EquivBEq α]
+  {m : DMap α β}
+  {x : (a : α) × β a}
+  {h : x ∈ m.toList}
+  : m.getEntry x.fst (by grind [mem_of_mem_toList]) = x := by
+    apply List.getEntry_of_mem h m.distinctKeys
+      
 
 omit [BEq α] in
 instance {m m' : DMap α β} [DecidableEq α] [∀a, DecidableEq (β a)] : Decidable (Equiv m m') := by
@@ -314,7 +426,7 @@ instance {m : DMap α β} : Decidable m.isEmpty := by
   infer_instance
 
 instance {k : α} {m : DMap α β} : Decidable (k ∈ m) := by
-  simp [mem_iff]
+  simp [mem_iff_toList_containsKey]
   infer_instance
 
 omit [BEq α] in
@@ -323,6 +435,97 @@ instance [DecidableEq α] [∀a, DecidableEq (β a)] : DecidableEq (DMap α β) 
   rintro ⟨l, h⟩ ⟨l', h'⟩
   simp only [mk.injEq]
   infer_instance
+
+instance entryDecidableBAll_key_getValueCast [LawfulBEq α] {p : (a : α) -> β a -> Prop} [∀a, DecidablePred (p a)] : ∀m : DMap α β, Decidable (∀a h, p a (m.getValueCast a h)) := by
+  intro m
+  if h' : ∀x ∈ m.toList, p x.1 x.2
+  then
+    apply Decidable.isTrue
+    intro a h
+    specialize h' ⟨a, m.get a h⟩ 
+    have := getEntry_eq_key_getValueCast (h := h)
+    grind [getEntry_mem]
+  else
+    apply Decidable.isFalse
+    intro p
+    apply h'
+    intro x mem
+    specialize p x.fst (by simp [<- mem_keys_iff_mem, keys_eq_map]; grind)
+    have := getEntry_eq_key_getValueCast (k := x.fst) (m := m) (h := by grind)
+    grind [getEntry_of_mem]
+
+instance entryDecidableBAll_getEntry [LawfulBEq α] {p : (a : α) -> β a -> Prop} [∀a, DecidablePred (p a)] : ∀m : DMap α β, Decidable (∀a h, p (m.getEntry a h).fst (m.getEntry a h).snd) := by
+  intro m
+  if h : ∀a h, p a (m.getValueCast a h)
+  then
+    apply Decidable.isTrue
+    grind [getEntry_eq_key_getValueCast]
+  else
+    apply Decidable.isFalse
+    grind [getEntry_eq_key_getValueCast]
+
+instance entryDecidableBAll_Sigma_p [LawfulBEq α] {p : (a : α) × β a -> Prop} [DecidablePred p] : ∀m : DMap α β, Decidable (∀a h, p (m.getEntry a h)) := by
+  intro m
+  let ρ (a : α) (xba : β a) := p ⟨a, xba⟩
+  if h : ∀a h, ρ (m.getEntry a h).fst (m.getEntry a h).snd
+  then
+    subst ρ
+    apply Decidable.isTrue
+    grind
+  else 
+    subst ρ
+    apply Decidable.isFalse
+    grind
+
+instance keyDecidableBAll [LawfulBEq α] {p : α -> Prop} [DecidablePred p] : ∀m : DMap α β, Decidable (∀a ∈ m, p a) := by
+  intro m
+  simp [mem_iff_keys_contains]
+  infer_instance
+
+
+instance entryDecidableBEx_key_getValueCast [LawfulBEq α] {p : (a : α) -> β a -> Prop} [∀a, DecidablePred (p a)] : ∀m : DMap α β, Decidable (∃a h, p a (m.getValueCast a h)) := by
+  intro m
+  if h : ∃x ∈ m.toList, p x.fst x.snd
+  then
+    apply Decidable.isTrue
+    obtain ⟨x, mem, hp⟩ := h
+    exists x.fst
+    exists (by grind [mem_of_mem_toList])
+    have := getEntry_eq_key_getValueCast (k := x.fst) (m := m) (h := by grind [mem_of_mem_toList])
+    grind [getEntry_of_mem]
+  else
+    apply Decidable.isFalse
+    intro p
+    apply h
+    obtain ⟨a, h, hp⟩ := p
+    exists ⟨a, m.getValueCast a (by grind)⟩
+    have := getEntry_eq_key_getValueCast (k := a) (m := m) (h := by grind)
+    grind [getEntry_mem]
+
+instance entryDecidableBEx_getEntry [LawfulBEq α] {p : (a : α) -> β a -> Prop} [∀a, DecidablePred (p a)] : ∀m : DMap α β, Decidable (∃a h, p (m.getEntry a h).fst (m.getEntry a h).snd) := by
+  intro m
+  if h : ∃a h, p a (m.getValueCast a h)
+  then apply Decidable.isTrue; grind [getEntry_eq_key_getValueCast]
+  else apply Decidable.isFalse; grind [getEntry_eq_key_getValueCast]
+
+instance entryDecidableBEx_Sigma_p [LawfulBEq α] {p : (a : α) × β a -> Prop} [DecidablePred p] : ∀m : DMap α β, Decidable (∃a h, p (m.getEntry a h)) := by
+  intro m
+  let ρ (a : α) (xba : β a) := p ⟨a, xba⟩
+  if h : ∃ a h, ρ (m.getEntry a h).fst (m.getEntry a h).snd
+  then
+    subst ρ
+    apply Decidable.isTrue
+    grind
+  else
+    subst ρ
+    apply Decidable.isFalse
+    grind
+
+instance keyDecidableBEx [LawfulBEq α] {p : α -> Prop} [DecidablePred p] : ∀m : DMap α β, Decidable (∃a ∈ m, p a) := by
+  intro m
+  simp [mem_iff_keys_contains]
+  infer_instance
+
 
 end DMap
 
@@ -363,25 +566,25 @@ theorem ofList_toList_eq_id
       simp
     · simpa [List.DistinctKeys.def, List.pairwise_map, List.Prod.toSigma]
 
-theorem ofList_mem_iff_containsKey
+theorem ofList_mem_iff_toList_containsKey
   [LawfulBEq α]
   {l : List (α × β)}
   : ∀a, a ∈ (ofList l) <-> (l.map List.Prod.toSigma).containsKey a := by
     intro a
-    rw [<- DMap.ofList_mem_iff_containsKey]
-    simp [ofList, insertList, DMap.ofList, reverse, emptyCollection_def, List.insertListConst, mem_iff, containsKey, <- List.containsKey_reverse_eq, DMap.insertList]
+    rw [<- DMap.ofList_mem_iff_toList_containsKey]
+    simp [ofList, insertList, DMap.ofList, reverse, emptyCollection_def, List.insertListConst, mem_iff_toList_containsKey, <- List.containsKey_reverse_eq, DMap.insertList]
 
 theorem ofList_getValueCast_eq_getValueCast
   [LawfulBEq α]
   {l : List (α × β)}
   (hd : l.Pairwise fun a b => (a.fst == b.fst) = false)
-  : ∀a h, (ofList l).getValueCast a h = (l.map List.Prod.toSigma).getValueCast a (by grind [ofList_mem_iff_containsKey]) := by
+  : ∀a h, (ofList l).getValueCast a h = (l.map List.Prod.toSigma).getValueCast a (by grind [ofList_mem_iff_toList_containsKey]) := by
     intro a h
     rw [<- DMap.ofList_getValueCast_eq_getValueCast]
     · simp [ofList_eq_DMap_ofList_map]
     · simp [List.DistinctKeys.def, List.pairwise_map, List.Prod.toSigma]
       grind
-    · grind [DMap.ofList_mem_iff_containsKey, ofList_mem_iff_containsKey]
+    · grind [DMap.ofList_mem_iff_toList_containsKey, ofList_mem_iff_toList_containsKey]
 
 end DMap.Const
 
@@ -421,10 +624,10 @@ theorem ofList_toList_eq_id
       simp
     · simpa [List.pairwise_map]
 
-theorem ofList_mem_iff_containsKey
+theorem ofList_mem_iff_toList_containsKey
   [LawfulBEq α]
   {l : List α}
   : ∀a, a ∈ (ofList l) <-> (l.map fun a => ⟨a, Unit.unit⟩).containsKey a := by
     intro a
-    rw [<- DMap.ofList_mem_iff_containsKey]
+    rw [<- DMap.ofList_mem_iff_toList_containsKey]
     simp [ofList_eq_DMap_ofList_map]

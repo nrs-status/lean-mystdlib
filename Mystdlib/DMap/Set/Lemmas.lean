@@ -39,7 +39,7 @@ theorem mem_iff_mem_toList
   {m : Set α}
   {k : α}
   : k ∈ m <-> k ∈ m.toList := by
-    simp [toList, Unit.toList, <- DMap.Unit.toList_eq_keys, DMap.mem_keys_iff_mem, mem_iff, Map.mem_iff]
+    simp [toList, Unit.toList, <- DMap.Unit.toList_eq_keys, DMap.mem_keys_iff_mem, mem_iff, Map.mem_iff_mem_inner]
 
 theorem toList_pairwise_not_beq
   {s : Set α}
@@ -199,7 +199,7 @@ theorem ofList_mem_iff_containsKey
   [LawfulBEq α]
   {l : List α}
   : ∀a, a ∈ (ofList l) <-> (l.map fun a => ⟨a, Unit.unit⟩).containsKey a := by
-    apply DMap.Unit.ofList_mem_iff_containsKey
+    apply DMap.Unit.ofList_mem_iff_toList_containsKey
 
 theorem union_left_empty_equiv_self
   [EquivBEq α]
@@ -231,4 +231,9 @@ instance [DecidableEq α] : DecidableEq (Set α) := by
   unfold DecidableEq
   rintro ⟨l, h⟩ ⟨l', h'⟩
   simp only [mk.injEq]
+  infer_instance
+
+instance decidableBAll [LawfulBEq α] {p : α -> Prop} [DecidablePred p] : ∀s : Set α, Decidable (∀a ∈ s, p a) := by
+  intro m
+  simp [mem_iff_mem_toList, toList, Unit.toList, DMap.Unit.toList, DMap.Const.toList]
   infer_instance

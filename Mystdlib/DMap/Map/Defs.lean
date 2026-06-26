@@ -49,6 +49,25 @@ def getValueCast [LawfulBEq α]  (a : α) (m : Map α β) (h : a ∈ m) : β :=
 abbrev get [LawfulBEq α] (m : Map α β) (a : α) (h : a ∈ m) : β :=
   m.getValueCast a h
 
+def getValueCast! [LawfulBEq α] (a : α) [Inhabited β] (m : Map α β) : β :=
+  m.inner.getValueCast! a
+
+abbrev get! [LawfulBEq α] (a : α) [Inhabited β] (m : Map α β) : β :=
+  m.getValueCast! a
+
+def getEntry? (m : Map α β) (a : α) : Option (α × β) :=
+  DMap.Const.getEntry? m.inner a
+
+def getEntry (m : Map α β) (a : α) (h : a ∈ m) : α × β :=
+  DMap.Const.getEntry m.inner a h
+
+
+def modifyKey [LawfulBEq α] (k : α) (f : β -> β) (m : Map α β) : Map α β :=
+  ⟨m.inner.modifyKey k f⟩
+
+
+def replaceEntry [PartialEquivBEq α] (k : α) (v : β) (m : Map α β) : Map α β :=
+  ⟨m.inner.replaceEntry k v⟩
 
 def values (m : Map α β) : List β := 
   m.inner.values
@@ -91,6 +110,12 @@ def union
 
 instance [PartialEquivBEq α] : Union (Map α β) where
   union := union
+
+def Disjoint (m m' : Map α β) : Prop :=
+  m.inner.Disjoint m'.inner
+
+def map {γ : Type w} (m : Map α β) (f : α -> β -> γ) : Map α γ :=
+  ⟨m.inner.map f⟩
 
 namespace Unit
 

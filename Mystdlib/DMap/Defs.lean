@@ -4,7 +4,7 @@ import Mystdlib.List.DistinctKeys
 
 open Std Internal
 
-structure DMap (a : Type u) [BEq α] (β : α -> Type v) where
+structure DMap (α : Type u) [BEq α] (β : α -> Type v) where
   toList : List ((a : α) × β a)
   distinctKeys : toList.DistinctKeys
 
@@ -51,7 +51,21 @@ abbrev get? [LawfulBEq α]  (a : α) (m : DMap α β) : Option (β a) :=
 def getValueCast [LawfulBEq α]  (a : α) (m : DMap α β) (h : a ∈ m) : β a :=
   m.toList.getValueCast a (by simp_all [Membership.mem, containsKey])
 
+abbrev get [LawfulBEq α] (a : α) (m : DMap α β) (h : a ∈ m) : β a :=
+  m.getValueCast a h
 
+
+def getValueCast! [LawfulBEq α] (a : α) [Inhabited (β a)] (m : DMap α β) : β a :=
+  m.toList.getValueCast! a
+
+abbrev get! [LawfulBEq α] (a : α) [Inhabited (β a)] (m : DMap α β) : β a :=
+  m.getValueCast! a
+
+def modifyKey [LawfulBEq α] (k : α) (f : β k -> β k) (m : DMap α β) : DMap α β :=
+  ⟨m.toList.modifyKey k f, List.DistinctKeys.modifyKey m.distinctKeys⟩
+
+def replaceEntry [PartialEquivBEq α] (k : α) (v : β k) (m : DMap α β) : DMap α β :=
+  ⟨m.toList.replaceEntry k v, List.DistinctKeys.replaceEntry m.distinctKeys⟩
 
 def values {β : Type v} (m : DMap α (fun (_ : α) => β)) : List β := 
   m.toList.values
@@ -112,6 +126,13 @@ def ofList
 instance [PartialEquivBEq α] : Union (DMap α β) where
   union := union
 
+def Disjoint (m m' : DMap α β) : Prop :=
+  ∀x, x ∈ m -> ¬ x ∈ m'
+
+
+def map {γ : α -> Type w} (m : DMap α β) (f : (a : α) -> β a -> γ a) : DMap α γ :=
+  ⟨m.toList.map fun p => ⟨p.fst, f p.fst p.snd⟩, List.DistinctKeys.map m.distinctKeys⟩
+
 end DMap
 
 namespace DMap.Const
@@ -131,6 +152,14 @@ def ofList
   [PartialEquivBEq α]
   (l : List (α × β)) : DMap α (fun (_ : α) => β) :=
   (DMap.Const.insertList ∅ l).reverse
+
+def getEntry? (m : DMap α fun _ => β) (a : α) : Option (α × β) :=
+  (m.getEntry? a).map fun x => (x.fst, x.snd)
+
+def getEntry (m : DMap α fun _ => β) (a : α) (h : a ∈ m) : α × β :=
+  let ⟨fst, snd⟩ := m.getEntry a h
+  (fst, snd)
+
 
 end DMap.Const
 
