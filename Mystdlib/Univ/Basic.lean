@@ -405,6 +405,9 @@ instance [Codable α y code] : Codable α (x ∪ y) code where
 
 def typeToCode α [Codable α univ code] := code
 
+def typeToDomCode α [Codable α univ code] : univ.Domain :=
+  ⟨code, Codable.satisfies α⟩
+
 def mkTerm [Codable α univ code] (a : α) : univ.CodedTerm :=
   ⟨code, Codable.satisfies α, cast (by symm; apply Codable.wf) a⟩
 
