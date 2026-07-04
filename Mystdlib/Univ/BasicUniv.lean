@@ -1,107 +1,66 @@
 import Mystdlib.Univ.Basic
+import Mystdlib.Univ.GenCodable
 
+open Univ
 
-namespace BasicUniv
-@[simp]
-def codeNodesImpl : Std.HashSet String := {"nat", "bool", "unit", "empty", "string", "format", "syntax", "name", "array", "list"}
+abbrev BasicUniv : Univ where
+  inner := .ofList [
+    (mkUnivEntry "nat" 0 Nat),
+    (mkUnivEntry "bool" 0 Bool),
+    (mkUnivEntry "unit" 0 Unit),
+    (mkUnivEntry "empty" 0 Empty),
+    (mkUnivEntry "string" 0 String),
+    (mkUnivEntry "format" 0 Std.Format),
+    (mkUnivEntry "arrow" 2 (· -> ·)),
+    (mkUnivEntry "name" 0 Lean.Name),
+    (mkUnivEntry "array" 1 Array),
+    (mkUnivEntry "list" 1 List),
+    (mkUnivEntry "prod" 2 Prod),
+    (mkUnivEntry "option" 1 Option),
+    ]
 
-@[simp]
-def aritiesImpl : codeNodesImpl∋ -> Type :=
-  fun ⟨str, _⟩ => if str ∈ ({"array", "list"} : Std.HashSet String)
-  then Unit
-  else Empty
+inductive CanRepr : Univ.Code -> Prop
+| intro : code.typ ∈ ["nat", "bool", "unit", "empty", "string", "name", "array", "list", "prod", "option"] -> (∀i, CanRepr (code.tail i)) -> CanRepr code
 
-@[grind, simp]
-def decodeImpl : (σ : codeNodesImpl∋) -> (aritiesImpl σ -> Type) -> Type :=
-  fun ⟨str, is_elm⟩ cont => if h : str = "nat"
-  then Nat
-  else if h : str = "bool"
-  then Bool
-  else if h : str = "unit"
-  then Unit
-  else if h : str = "empty"
-  then Empty
-  else if h : str = "string"
-  then String
-  else if h : str = "format"
-  then Std.Format
-  else if h : str = "syntax"
-  then Lean.Syntax
-  else if h : str = "name"
-  then Lean.Name
-  else if h : str = "array"
-  then Array (cont (cast ?_ Unit.unit))
-  else if h : str = "list"
-  then List (cont (cast ?_ Unit.unit))
-  else ?_
-where finally
-  · simp_all
-  · simp_all
-  · exfalso
-    simp at is_elm
+partial def CanRepr_decidable : Decidable (CanRepr code) := 
+  if h : ∀i, (CanRepr_decidable (code := code.tail i)).decide = true
+  then if h' : code.typ ∈ ["nat", "bool", "unit", "empty", "string", "name", "array", "list", "prod", "option"]
+    then .isTrue (.intro h' (by grind))
+    else .isFalse <| by
+      rintro ⟨h1, h2⟩
+      grind
+  else isFalse <| by
+    rintro ⟨h1, h2⟩
     grind
+  
+instance : Decidable (CanRepr code) := CanRepr_decidable
 
+def BasicUniv.repr (t : BasicUniv.CodedTerm) (h : CanRepr t.code) : String :=
+  match h with
+  | .intro iselm tailCanRepr =>
+    if h : t.code.typ = "nat"
+    then
+      have : type_of% t.term = Nat := by
+        rcases t with ⟨code, _, term⟩
+        rcases code with ⟨⟨typ, _⟩, _⟩
+        simp_all [Code.typ, Code.head, WType.head]
+        subst h
+        cbv
+      reprStr (this ▸ t.term)
+    else if h : t.code.typ = "bool"
+    then 
+      have : type_of% t.term = Bool := by
+        rcases t with ⟨code, _, term⟩
+        rcases code with ⟨⟨typ, _⟩, _⟩
+        simp_all [Code.typ, Code.head, WType.head]
+        subst h
+        cbv
+      reprStr (this ▸ t.term)
+    else "unimplemented"
 
-@[reducible]
-def _root_.BasicUniv : Univ where
-  codeNodes := BasicUniv.codeNodesImpl
-  arities := BasicUniv.aritiesImpl
-  decode := BasicUniv.decodeImpl
-
-
-instance {σ : BasicUniv.codeNodes∋} : Encodable (BasicUniv.arities σ)  := by
-  simp [BasicUniv]
-  split <;> infer_instance
-instance {σ : BasicUniv.codeNodes∋} : Fintype (BasicUniv.arities σ) := by
-  simp [BasicUniv]
-  split <;> infer_instance
-
-instance : Encodable BasicUniv.Code := by
-  simp [Univ.Code]
-  apply @WType.instEncodable _ _ _ (fun a => BasicUniv.instEncodableArities)
-
-instance : DecidableEq BasicUniv.Code := Encodable.decidableEqOfEncodable _
-
-
-instance : Codable Nat BasicUniv where
-  encode := nat#
-
-instance : Codable Bool BasicUniv where
-  encode := bool#
-
-instance : Codable Lean.Syntax BasicUniv where
-  encode := .mk "syntax"<: (by simp; nofun)
-
-instance : Codable Empty BasicUniv where
-  encode := empty#
-
-instance : Codable Unit BasicUniv where
-  encode := unit#
-
-instance : Codable String BasicUniv where
-  encode := string#
-
-instance : Codable Std.Format BasicUniv where
-  encode := format#
-
-instance : Codable Lean.Name BasicUniv where
-  encode := name#
-
-instance [inst : Codable α BasicUniv] : Codable (Array α) BasicUniv where
-  encode := .mk "array"<: (fun x => inst.encode)
-  wf := by
-    have := inst.wf
-    simp [Univ.Code.decode, decodeImpl] at *
-    grind
-
-instance [inst : Codable α BasicUniv] : Codable (List α) BasicUniv where
-  encode := .mk "list"<: (fun _ => inst.encode)
-  wf := by
-    have := inst.wf
-    simp [Univ.Code.decode, decodeImpl] at *
-    grind
-
-
-end BasicUniv
-
+instance : Repr BasicUniv.CodedTerm where
+  reprPrec := fun t _ =>
+    if h : CanRepr t.code
+    then BasicUniv.repr t h
+    else "cannot repr"
 

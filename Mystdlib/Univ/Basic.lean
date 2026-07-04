@@ -27,6 +27,9 @@ theorem mem_iff_mem_arities
 
 def get (k : String) (univ : Univ) (h : k ∈ univ) : (n : Nat) × (Vector Type n -> Type) :=
   univ.inner.get k (by simp_all [Membership.mem])
+
+def get? (k : String) (univ : Univ) :=
+  univ.inner.get? k
     
 def getArity (k : String) (univ : Univ) (h : k ∈ univ) : Nat :=
   (univ.inner.get k (by simp_all [Membership.mem])).1
@@ -37,8 +40,42 @@ def getInterpretation (k : String) (univ : Univ) (h : k ∈ univ) : Vector Type 
 
 abbrev Code := WType.Free String
 
+namespace Code
+
+def repr (code : Code) : String :=
+  code.elim _ fun ⟨head, tail⟩ =>
+    if head.2 = 0
+    then head.1
+    else "(" ++ head.1 ++ " " ++ String.intercalate " " (List.ofFn tail) ++ ")"
+
+instance : Repr Code where
+  reprPrec := fun x _ => x.repr
+
+def head (code : Code) : String × Nat := 
+  WType.head code
+
+def arity (code : Code) : Nat := 
+  code.head.2
+
+def typ (code : Code) : String :=
+  code.head.1
+
+def tail (code : Code) : Fin code.arity -> Code :=
+  fun fin => (WType.tail code) fin
+
+abbrev mk (typ : String) (arity : Nat) (subterms : List Code) (h : subterms.length = arity := by simp) : Code :=
+  WType.mk (typ, arity) (h ▸ subterms.get)
+
+instance : EmptyCollection (Vector Code 0) where
+  emptyCollection := ⟨#[], by simp⟩
+
+abbrev mk' (typ : String) : Code := 
+  WType.mk (typ, 0) (∅ : Vector Code 0).get
+
+end Code
+
 inductive SatisfiedBy (univ : Univ) : Code -> Prop 
-| intro {codeNode : String} : (h : codeNode ∈ univ) -> (cont : Fin (univ.getArity codeNode h) -> Code) -> (∀i, univ.SatisfiedBy (cont i)) -> univ.SatisfiedBy (.mk (codeNode, univ.getArity codeNode h) cont)
+| intro {codeNode : String} : (h : codeNode ∈ univ) -> (cont : Fin (univ.getArity codeNode h) -> Code) -> (∀i, univ.SatisfiedBy (cont i)) -> univ.SatisfiedBy (WType.mk (codeNode, univ.getArity codeNode h) cont)
 
 
 theorem SatisfiedBy_congr_aux
@@ -80,7 +117,7 @@ theorem not_SatisfiedBy_of_not_mem
   : ¬ code.head.fst ∈ univ -> ¬ univ.SatisfiedBy code := by
     intro h wf
     cases wf
-    simp [WType.head] at h
+    simp [Code.head, WType.head] at h
     grind
 
 theorem not_SatisfiedBy_of_get_neq_arity
@@ -100,7 +137,7 @@ theorem not_SatisfiedBy_of_child_not_wf
   : ¬ univ.SatisfiedBy (code.tail i) -> ¬ univ.SatisfiedBy code := by
     intro h wf
     cases wf
-    simp [WType.tail] at h
+    simp [Code.tail, WType.tail] at h
     grind
 
 theorem not_SatisfiedBy_of_child_not_mem
@@ -116,7 +153,7 @@ theorem not_SatisfiedBy_of_child_not_mem
 
 def SatisfiedBy_decidable {univ : Univ} : Decidable (univ.SatisfiedBy code) :=
   match hmatch : code with
-  | .mk (fst, snd) tail =>
+  | WType.mk (fst, snd) tail =>
     if h : ∀i, (SatisfiedBy_decidable (code := tail i) (univ := univ)).decide = true
     then if h' : fst ∈ univ
       then if h'' : univ.getArity fst h' = snd
@@ -125,7 +162,7 @@ def SatisfiedBy_decidable {univ : Univ} : Decidable (univ.SatisfiedBy code) :=
           grind [SatisfiedBy.intro]
         else .isFalse <| by
           apply not_SatisfiedBy_of_get_neq_arity
-          <;> grind [WType.head]
+          <;> grind [Code.head, WType.head]
       else .isFalse <| by
         apply not_SatisfiedBy_of_not_mem h'
     else .isFalse <| by
@@ -168,10 +205,31 @@ def decode (univ : Univ) (code : Univ.Code) (h : univ.SatisfiedBy code) : Type :
 where finally
   all_goals (cases h; subst aux; simp [Univ.getArity, Univ.get])
 
+def decode? (univ : Univ) (code : Univ.Code) : Option Type :=
+  if h : univ.SatisfiedBy code
+  then decode univ code h
+  else .none
+
 def Domain (univ : Univ) := { code // univ.SatisfiedBy code }
 
 def Domain.decode {univ : Univ} (code : univ.Domain) : Type := 
   univ.decode code.val code.property
+
+structure CodedTerm (univ : Univ) where
+  code : Code
+  satisfies : univ.SatisfiedBy code
+  term : univ.decode code satisfies
+
+def CodedTerm.type (ct : CodedTerm univ) : Type :=
+  univ.decode ct.code ct.satisfies
+
+structure Domain.Term (domcode : Domain univ) where
+  term : domcode.decode
+
+def Domain.Term.toCodedTerm {domcode : Univ.Domain univ} (t : domcode.Term) : univ.CodedTerm where
+  code := domcode.val
+  satisfies := domcode.property
+  term := t.term
 
 instance : Union Univ where
   union := fun univ univ' => ⟨univ.inner ∪ univ'.inner⟩
@@ -213,6 +271,30 @@ theorem getArity_union_of_mem_right
     congr 1
     apply DMap.getValueCast_union_of_mem_right
 
+
+theorem getArity_union_of_mem_left_and_not_mem_right
+  {x y : Univ}
+  (mem : k ∈ x)
+  (notmem : k ∉ y)
+  : (x ∪ y).getArity k (by grind [mem_union_of_left]) = x.getArity k mem := by
+    simp [getArity]
+    congr 1
+    apply Map.getValueCast_union_of_mem_left_and_not_mem_right
+      (by simp [mem_iff_mem_arities, arities, <- Map.mem_map] at mem; grind [Map.mem_union_of_left])
+      (by simp_all [Membership.mem])
+
+def Disjoint (x y : Univ) : Prop :=
+  ∀k, k ∈ x -> k ∉ y
+  deriving Decidable
+
+theorem getArity_Disjoint_union_of_mem_left
+  {x y : Univ}
+  (hdisj : x.Disjoint y)
+  (mem : k ∈ x)
+  : (x ∪ y).getArity k (by grind [mem_union_of_left]) = x.getArity k mem := by
+    apply getArity_union_of_mem_left_and_not_mem_right
+    grind [Disjoint]
+
 theorem satisfies_union_of_satisfies_right
   {x y : Univ}
   (h : y.SatisfiedBy code)
@@ -238,65 +320,105 @@ decreasing_by
     ⟨n, by grind⟩
   grind
 
+theorem satisfies_Disjoint_union_of_satisfies_left
+  {x y : Univ}
+  (hdisj : x.Disjoint y)
+  (satisfies : x.SatisfiedBy code)
+  : (x ∪ y).SatisfiedBy code := by
+    obtain ⟨ismem, tail, ih⟩ := satisfies
+    rename_i codeNode
+    suffices getArity codeNode x ismem = getArity codeNode (x ∪ y) (by grind [mem_union_of_left]) by
+      rw [SatisfiedBy_congr_aux this]
+      constructor
+      rintro ⟨n, lt⟩
+      apply satisfies_Disjoint_union_of_satisfies_left
+      <;> simp_all
+    grind [getArity_Disjoint_union_of_mem_left]
+
 theorem union_decode_eq_right_decode
   {x y : Univ}
   {code : Code}
   {h : y.SatisfiedBy code}
   : (x ∪ y).decode code (satisfies_union_of_satisfies_right h) = y.decode code h := by
     induction code with | mk head tail ih => ?_
-    simp [decode]
+    simp only [decode]
     conv =>
       left
       right
       right
       intro i
       rw [ih (h := by cases h; grind)]
-    simp [get, Map.get]
+    simp only [get, Map.get]
     rw! (castMode := .all) [union_def]
-    simp
     rw! (castMode := .all) [Map.getValueCast_union_of_mem_right]
     · simp
     · have := head_mem_of_SatisfiedBy h
       simp_all [Membership.mem]
 
-class Codable (α : Type) (univ : Univ) where
-  code : Code
-  satisfies : univ.SatisfiedBy code
-  wf : univ.decode code satisfies = α := by simp
+theorem Disjoint_union_decode_eq_left_decode
+  {x y : Univ}
+  {code : Code}
+  {h : x.SatisfiedBy code}
+  (hdisj : x.Disjoint y)
+  : (x ∪ y).decode code (satisfies_Disjoint_union_of_satisfies_left hdisj h) = x.decode code h := by
+    induction code with | mk head tail ih => ?_
+    simp only [decode]
+    conv =>
+      left
+      right
+      right
+      intro i
+      rw [ih (h := by cases h; grind)]
+    simp only [get, Map.get]
+    rw! (castMode := .all) [union_def]
+    have := Map.getValueCast_union_of_mem_left_and_not_mem_right 
+      (by apply head_mem_of_SatisfiedBy h)
+      (by simp [Disjoint, mem_iff_mem_arities, arities, <- Map.mem_map] at hdisj; apply hdisj; apply head_mem_of_SatisfiedBy h)
+    rw! (castMode := .all) [this]
+    simp
 
-instance [inst : Codable α y] : Codable α (x ∪ y) where
-  code := inst.code
-  satisfies := satisfies_union_of_satisfies_right inst.satisfies
-  wf := by 
-    have := inst.wf
-    rw! (castMode := .all) (occs := [4]) [<- inst.wf]
-    apply union_decode_eq_right_decode
+class DisjointUnivUnion (x y : Univ) where
+  disjoint : x.Disjoint y
 
+instance {x y : Univ} : Coe y.CodedTerm (x ∪ y).CodedTerm where
+  coe := fun ⟨code, satisfies, term⟩ => ⟨code, Univ.satisfies_union_of_satisfies_right satisfies, cast (by symm; apply Univ.union_decode_eq_right_decode) term⟩
 
-def BasicUniv : Univ where
-  inner := .ofList [
-      ("nat", ⟨0, fun _ => Nat⟩),
-      ("bool", ⟨0, fun _ => Bool⟩),
-      ("unit", ⟨0, fun _ => Unit⟩),
-      ("empty", ⟨0, fun _ => Empty⟩),
-      ("string", ⟨0, fun _ => String⟩),
-      ("format", ⟨0, fun _ => Lean.Format⟩),
-      ("name", ⟨0, fun _ => Lean.Name⟩),
-      ("array", ⟨1, fun v => Array v[0]⟩),
-      ("list", ⟨1, fun v => List v[0]⟩),
-      ("prod", ⟨2, fun v => Prod v[0] v[1]⟩),
-      ("option", ⟨1, fun v => Option v[0]⟩)
-    ]
+instance [DisjointUnivUnion x y] : Coe x.CodedTerm (x ∪ y).CodedTerm where
+  coe := fun ⟨code, satisfies, term⟩ => ⟨code, Univ.satisfies_Disjoint_union_of_satisfies_left DisjointUnivUnion.disjoint satisfies, cast (by symm; apply Univ.Disjoint_union_decode_eq_left_decode; apply DisjointUnivUnion.disjoint) term⟩
 
+class Codable (α : Type) (univ : Univ) (code : outParam Code) where
+  satisfies : univ.SatisfiedBy code := by native_decide
+  wf : univ.decode code satisfies = α := by cbv
 
---- 
+instance [Codable α x code] [DisjointUnivUnion x y] : Codable α (x ∪ y) code where
+  satisfies := Univ.satisfies_Disjoint_union_of_satisfies_left DisjointUnivUnion.disjoint (Codable.satisfies α)
+  wf := by
+    rw! [<- Codable.wf (α := α) (univ := x) (code := code)]
+    apply Univ.Disjoint_union_decode_eq_left_decode
+    apply DisjointUnivUnion.disjoint
 
-/-
-def wfterm (term : Univ.Code × Type) (univ : Univ) (h : univ.SatisfiedBy term.1) : Prop :=
-  term.2 = univ.decode term.1 h
+instance [Codable α y code] : Codable α (x ∪ y) code where
+  satisfies := Univ.satisfies_union_of_satisfies_right (Codable.satisfies α)
+  wf := by
+    rw! [<- Codable.wf (α := α) (univ := y) (code := code)]
+    apply Univ.union_decode_eq_right_decode
 
-example : wfterm (.mk ("nat", 0) nofun, Nat) BasicUniv (by native_decide) := by
-  unfold wfterm
-  simp
-  cbv
--/
+def mkTerm [Codable α univ code] (a : α) : univ.CodedTerm :=
+  ⟨code, Codable.satisfies α, cast (by symm; apply Codable.wf) a⟩
+
+class TypeFnGen (arity : Nat) (typ : outParam (Type 1)) where
+  fn : (F : typ) -> Vector Type arity -> Type
+
+instance : TypeFnGen 0 Type where
+  fn := fun t _ => t
+
+instance
+  [inst : TypeFnGen n t]
+  : TypeFnGen (Nat.succ n) (Type -> t) where
+    fn := fun F v =>
+      have := inst.fn
+      this (F v.head) v.tail
+
+def mkUnivEntry (typ : String) (arity : Nat) [TypeFnGen arity t] (F : t) : String ×  (n : Nat) × (Vector Type n -> Type) :=
+  (typ, ⟨arity, TypeFnGen.fn F⟩)
+

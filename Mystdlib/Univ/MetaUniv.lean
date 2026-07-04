@@ -1,17 +1,26 @@
 import Lean
-import Mystdlib.Univ.Free.Basic
+import Mystdlib.Univ.BasicUniv
 
 open Lean Core Meta Elab Term Command
 
+open Univ
+
 def MetaUniv.Extension : Univ where
   inner := .ofList [
-      ("expr", ⟨0, fun _ => Expr⟩),
-      ("metam", ⟨1, fun v => MetaM v[0]⟩),
-      ("termelabm", ⟨1, fun v => TermElabM v[0]⟩),
-      ("corem", ⟨1, fun v => CoreM v[0]⟩),
-      ("commandelabm", ⟨1, fun v => CommandElabM v[0]⟩),
+      (mkUnivEntry "expr" 0 Expr),
+      (mkUnivEntry "metavarkind" 0 MetavarKind),
+      (mkUnivEntry "mvarid" 0 MVarId),
+      (mkUnivEntry "fvarid" 0 FVarId),
+      (mkUnivEntry "localcontext" 0 LocalContext),
+      (mkUnivEntry "metam" 1 MetaM),
+      (mkUnivEntry "termelabm" 1 TermElabM),
+      (mkUnivEntry "corem" 1 CoreM),
+      (mkUnivEntry "commandelabm" 1 CommandElabM),
     ]
 
-def MetaUniv : Univ := Univ.BasicUniv ∪ MetaUniv.Extension
+abbrev MetaUniv : Univ := BasicUniv ∪ MetaUniv.Extension
+
+instance : Univ.DisjointUnivUnion BasicUniv MetaUniv.Extension where
+  disjoint := by native_decide
 
 
