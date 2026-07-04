@@ -403,6 +403,8 @@ instance [Codable α y code] : Codable α (x ∪ y) code where
     rw! [<- Codable.wf (α := α) (univ := y) (code := code)]
     apply Univ.union_decode_eq_right_decode
 
+def typeToCode α [Codable α univ code] := code
+
 def mkTerm [Codable α univ code] (a : α) : univ.CodedTerm :=
   ⟨code, Codable.satisfies α, cast (by symm; apply Codable.wf) a⟩
 
