@@ -220,7 +220,7 @@ structure CodedTerm (univ : Univ) where
   satisfies : univ.SatisfiedBy code
   term : univ.decode code satisfies
 
-def CodedTerm.type (ct : CodedTerm univ) : Type :=
+abbrev CodedTerm.type (ct : CodedTerm univ) : Type :=
   univ.decode ct.code ct.satisfies
 
 structure Domain.Term (domcode : Domain univ) where
@@ -421,9 +421,12 @@ instance
   [inst : TypeFnGen n t]
   : TypeFnGen (Nat.succ n) (Type -> t) where
     fn := fun F v =>
-      have := inst.fn
-      this (F v.head) v.tail
+      inst.fn (F v.head) v.tail
 
 def mkUnivEntry (typ : String) (arity : Nat) [TypeFnGen arity t] (F : t) : String ×  (n : Nat) × (Vector Type n -> Type) :=
   (typ, ⟨arity, TypeFnGen.fn F⟩)
+
+/- def CodedTerm.repr {univ : Univ} (t : univ.CodedTerm) [Repr t.type] : Std.Format := -/
+/-   _root_.repr t.term -/
+
 
