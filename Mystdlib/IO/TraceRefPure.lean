@@ -3,6 +3,8 @@ import Lean
 import Mystdlib.IO.Misc
 import Mystdlib.StateRefT
 import Mystdlib.Writer
+import Mystdlib.DMap.Map.Defs
+import Mystdlib.DMap.Map.Lemmas
 
 /-
 an attempt at a pure TraceRef, so that we can parametrize the Ref hashmap's keys
@@ -10,85 +12,104 @@ an attempt at a pure TraceRef, so that we can parametrize the Ref hashmap's keys
 
 open Std
 
-def TraceT  {ξ : Type} [BEq ξ] [Hashable ξ] (β : ξ -> Type) (ρ : (DHashMap ξ β) -> Prop) (m : Type -> Type) (α : Type) :=
-  StateRefT' IO.RealWorld { hm : DHashMap ξ β // ρ hm } m α
+abbrev TraceT [BEq γ] (ρ : DMap γ β -> Prop) (μ : Type -> Type) (α : Type) :=
+  StateRefT' IO.RealWorld { db // ρ db } μ α
 
-variable {ξ : Type} [BEq ξ] [Hashable ξ] {β : ξ -> Type} {ρ : (DHashMap ξ β) -> Prop} [Monad m] [MonadLiftT (ST IO.RealWorld) m]
+variable [BEq γ] {ρ : DMap γ β -> Prop} [Monad μ] [MonadLiftT (ST IO.RealWorld) μ]
 
+/-
 section
 
 local macro "infer" : term => return (<- `(by unfold TraceT; infer_instance))
 
-instance : Monad (TraceT β ρ m) := infer
+instance : Monad (TraceT ρ μ) := infer
 
-instance : MonadLift m (TraceT β ρ m) := infer
+instance : MonadLift μ (TraceT ρ μ) := infer
 
-instance : MonadControl m (TraceT β ρ m) := infer
+instance : MonadControl μ (TraceT ρ μ) := infer
 
-instance  : MonadStateOf { hm : DHashMap ξ β // ρ hm } (TraceT β ρ m) := infer
+instance  : MonadStateOf { db // ρ db } (TraceT ρ μ) := infer
 
 open Lean
 
-instance  [MonadRef m] : MonadRef (TraceT β ρ m) := infer
+instance  [MonadRef μ] : MonadRef (TraceT ρ μ) := infer
 
-instance  [MonadQuotation m] : MonadQuotation (TraceT β ρ m) := infer
+instance  [MonadQuotation μ] : MonadQuotation (TraceT ρ μ) := infer
 
-instance  [Lean.AddErrorMessageContext m] : Lean.AddErrorMessageContext (TraceT β ρ m) := infer
+instance  [Lean.AddErrorMessageContext μ] : Lean.AddErrorMessageContext (TraceT ρ μ) := infer
 
-instance [MonadError m] : MonadError (TraceT β ρ m) := infer
+instance [MonadError μ] : MonadError (TraceT ρ μ) := infer
 
-instance [MonadRecDepth m] : MonadRecDepth (TraceT β ρ m) := infer
+instance [MonadRecDepth μ] : MonadRecDepth (TraceT ρ μ) := infer
 
 end
+-/
 
 namespace TraceT
 
+def run (x : TraceT ρ μ α) (s : { m // ρ m }) : μ (α × { m // ρ m }) :=
+  StateRefT'.run x s
 
-def insert? [DecidablePred ρ] (key : ξ) (xbkey : β key) : TraceT β ρ m Bool := do
-  let s <- get
-  if h : ρ (s.val.insert key xbkey)
-  then 
-    set (σ := { hm : DHashMap ξ β // ρ hm }) ⟨s.val.insert key xbkey, h⟩
+def getValueCast [LawfulBEq γ] (k : γ) (h : ∀σ : { m // ρ m }, k ∈ σ.val) : TraceT ρ μ (β k) := do
+  let m <- get
+  return m.val.get k (h _)
+
+def modifyKey [LawfulBEq γ] (k : γ) (f : β k -> β k) (h : ∀σ : { m // ρ m }, ρ (σ.val.modifyKey k f)) : TraceT ρ μ Bool := do
+  let m <- get
+  if h' : k ∈ m.val
+  then
+    set (σ := { m // ρ m }) ⟨m.val.modifyKey k f, h _⟩
     return .true
   else return .false
 
-def insert (key : ξ) (xbkey : β key) (h : ∀(s : { hm // ρ hm }), ρ (s.val.insert key xbkey)) : TraceT β ρ m Unit :=
-  modify (fun hm => ⟨hm.val.insert key xbkey, h hm⟩)
+def modifyGet [LawfulBEq γ] (k : γ) (f : β k -> β k) (h1 : ∀σ : { m // ρ m }, k ∈ σ.val) (h2 : ∀σ : { m // ρ m }, ρ (σ.val.modifyKey k f)) : TraceT ρ μ (β k) := 
+  MonadState.modifyGet fun σ => (f <| σ.val.get k (h1 _), ⟨σ.val.modifyKey k f, h2 _⟩)
 
-def insertMany [ForIn Id γ ((key : ξ) × β key)] (l : γ) (h : ∀(s : { hm // ρ hm }), ρ (s.val.insertMany l)) : TraceT β ρ m Unit :=
-  modify (fun hm => ⟨hm.val.insertMany l, h hm⟩)
+def insertEntry? [PartialEquivBEq γ] [DecidablePred ρ] (k : γ) (v : β k) : TraceT ρ μ Bool := do
+  let m <- get
+  if h : k ∈ m.val
+  then 
+    if h' : ρ (m.val.insertEntry k v)
+    then
+      set (σ := { m // ρ m }) ⟨m.val.insertEntry _ _, h'⟩
+      return .true
+    else return .false
+  else return .false
 
+def insertList?Aux [PartialEquivBEq γ] [DecidablePred ρ] (l : List ((k : γ) × β k)) (acc : Nat) : TraceT ρ μ Nat :=
+  match l with
+  | [] => return acc
+  | x :: xs => do
+    let r <- insertEntry? x.1 x.2
+    insertList?Aux xs (ite r acc acc.succ)
 
-
+def insertList? [PartialEquivBEq γ] [DecidablePred ρ] (l : List ((k : γ) × β k)) : TraceT ρ μ Nat :=
+  insertList?Aux l 0
 
 end TraceT
 
 open Lean Elab Command
 
-variable (β) in
-def Formatter := (key : ξ) -> β key -> Option (CommandElabM Format)
+def Formatter (γ : Type u) (β : γ -> Type v) := (k : γ) -> β k -> Option (CommandElabM Format)
 
-def Formatter.mk (pred : ξ -> Bool) (format : (key' : ξ) -> pred key' -> β key' -> CommandElabM Format) : Formatter β :=
-  fun key' xbkey' =>
-    if h : pred key'
-    then format key' h xbkey'
-    else .none
 
-def Formatter.else (x y : Formatter β) : Formatter β :=
-  fun k xbkey => match x k xbkey with
+def Formatter.else (x y : Formatter γ β) : Formatter γ β :=
+  fun k v => match x k v with
   | .some x => x
-  | .none => y k xbkey
+  | .none => y k v
 
-def Formatter.ofList (l : List (Formatter β)) : Formatter β :=
+def Formatter.ofList (l : List (Formatter γ β)) : Formatter γ β :=
   match l with
   | .nil => fun _ _ => .none
   | .cons x xs => x.else (.ofList xs)
 
 
-def trace (format : Formatter β) (termPath : String) : TraceT β ρ CommandElabM Unit := do
+def trace (format : Formatter γ β) (termPath : String) : TraceT ρ CommandElabM Unit := do
   let s <- get
-  for i in s.val do match format i.fst i.snd with
-  | .none => continue
-  | .some x => printToTerminal termPath (toString (<- x))
+  s.val.forM fun k v => match format k v with
+  | .none => return
+  | .some x => do printToTerminal termPath (toString (<- x))
+
+
 
 
