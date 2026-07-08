@@ -5,7 +5,7 @@ open Lean Core Meta Elab Term Command
 
 open Univ
 
-def MetaUniv.Extension : Univ where
+abbrev MetaUniv.Extension : Univ where
   inner := .ofList [
       (mkUnivEntry "expr" 0 Expr),
       (mkUnivEntry "metavarkind" 0 MetavarKind),

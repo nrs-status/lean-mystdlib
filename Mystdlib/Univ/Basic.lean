@@ -64,13 +64,15 @@ def tail (code : Code) : Fin code.arity -> Code :=
   fun fin => (WType.tail code) fin
 
 abbrev mk (typ : String) (arity : Nat) (subterms : List Code) (h : subterms.length = arity := by simp) : Code :=
-  WType.mk (typ, arity) (h ▸ subterms.get)
+  WType.mk (typ, arity) fun x => subterms.get (h ▸ x)
 
 instance : EmptyCollection (Vector Code 0) where
   emptyCollection := ⟨#[], by simp⟩
 
 abbrev mk' (typ : String) : Code := 
   WType.mk (typ, 0) (∅ : Vector Code 0).get
+
+instance : DecidableEq Univ.Code := WType.instDecidableEqOfFintype_mystdlib
 
 end Code
 
@@ -426,7 +428,5 @@ instance
 def mkUnivEntry (typ : String) (arity : Nat) [TypeFnGen arity t] (F : t) : String ×  (n : Nat) × (Vector Type n -> Type) :=
   (typ, ⟨arity, TypeFnGen.fn F⟩)
 
-/- def CodedTerm.repr {univ : Univ} (t : univ.CodedTerm) [Repr t.type] : Std.Format := -/
-/-   _root_.repr t.term -/
 
 

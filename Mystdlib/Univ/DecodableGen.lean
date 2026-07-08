@@ -44,39 +44,9 @@ instance
   [DecodableGen f (code :: codes) acc univ Type α]
   : DecodableGen f codes (code :: acc) univ Type α := sorry
 
-/- the following generic instance fails to unify during Lean.Meta.DiscrTree.getUnify so we write concrete instances instead
 instance 
   [DecodableGen f [] codes univ Type α] 
   : Decodable (.mk f n codes h) univ α := sorry
--/
-
-instance 
-  {univ : Univ}
-  {f : String}
-  {α : Type}
-  [DecodableGen f [] [code] univ Type α] 
-  : Decodable (.mk f 1 [code] h) univ α := sorry
-
-instance 
-  {univ : Univ}
-  {f : String}
-  {α : Type}
-  [DecodableGen f [] [code, code'] univ Type α] 
-  : Decodable (.mk f 2 [code, code'] h) univ α := sorry
-
-instance 
-  {univ : Univ}
-  {f : String}
-  {α : Type}
-  [DecodableGen f [] [code, code', code''] univ Type α] 
-  : Decodable (.mk f 3 [code, code', code''] h) univ α := sorry
-
-instance 
-  {univ : Univ}
-  {f : String}
-  {α : Type}
-  [DecodableGen f [] [code, code', code'', code'''] univ Type α] 
-  : Decodable (.mk f 4 [code, code', code'', code'''] h) univ α := sorry
 
 def Univ.CodedTerm.repr {univ : Univ} (t : univ.CodedTerm) : match t with | ⟨code, _, _⟩ => [Decodable code univ α] -> [Repr α] -> Std.Format := match t with
 | ⟨code, satisfies, term⟩ => @_root_.repr α _ (Decodable.wf (code := t.code) (univ := univ) (type := α) ▸ t.term)
