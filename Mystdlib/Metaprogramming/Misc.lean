@@ -51,7 +51,7 @@ def getLamConstVarsUserNames (nm : Name) : MetaM (Array String) := do
 --
 section
 
-open Elab Command
+open Elab Term Command
 
 instance : MonadLiftT TermElabM CommandElabM where
   monadLift := liftTermElabM
