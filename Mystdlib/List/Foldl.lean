@@ -16,37 +16,109 @@ theorem scanl_induction
   {f : β -> α -> β}
   {l : List α}
   {init : β}
-  (base : motive init)
+  {i : Nat}
+  {h}
+  (base : motive (getElem (l.scanl f init) i h))
   (ih : ∀i (h : i + 1 < (l.scanl f init).length), motive (l.scanl f init)[i] -> motive (l.scanl f init)[i + 1])
-  : ∀i (h : i < (l.scanl f init).length), motive (l.scanl f init)[i] := by
+  : ∀j (h' : j < (l.scanl f init).length), i ≤ j -> motive (l.scanl f init)[j] := by
     intro i h
     induction i
     <;> grind
+
+theorem scanl_induction_of_preservation
+  {motive : β -> Prop}
+  {f : β -> α -> β}
+  {l : List α}
+  {init : β}
+  {i : Nat}
+  {h}
+  (base : motive (getElem (l.scanl f init) i h))
+  (preservation : ∀b, motive b -> ∀a, motive (f b a))
+  : ∀j (h' : j < (l.scanl f init).length), i ≤ j -> motive (l.scanl f init)[j] := by
+    intro j lt leq
+    apply scanl_induction
+    · assumption
+    · intro i' lt h''
+      have := preservation _ h''
+      rw [getElem_succ_scanl]
+      apply this
+    · assumption
+  
 
 theorem foldl_prefix_induction
   {motive : β -> Prop}
   {f : β -> α -> β}
   {l : List α}
   {init : β}
-  (base : motive init)
-  (ih : ∀i h, motive ((l.take i).foldl f init) -> motive (f ((l.take i).foldl f init) l[i]))
-  : ∀i, motive ((l.take i).foldl f init) := by
-    intro i
-    rw [foldl_eq_scanl_getElem]
-    apply scanl_induction
-    <;> grind [getElem_succ_scanl]
+  {i : Nat}
+  (base : motive ((l.take i).foldl f init))
+  (ih : ∀j h, motive ((l.take j).foldl f init) -> motive (f ((l.take j).foldl f init) l[j]))
+  : ∀j, i ≤ j -> motive ((l.take j).foldl f init) := by
+    intro j leq
+    if ltlen : j < l.length
+    then
+      have := scanl_induction (l := l) (f := f) (init := init) (i := i) (h := by grind) (motive := motive)
+      simp only [getElem_scanl] at this
+      apply this base
+      · intro i' lt hmote
+        rw [<- getElem_scanl]
+        · grind [getElem_succ_scanl]
+        · assumption
+      · grind
+      · assumption
+    else
+      if eq_i : i = j
+      then grind
+      else
+        have lt_i : i < j := by grind
+        if ileq_len : l.length ≤ i
+        then grind [List.take_of_length_le]
+        else
+          rw [List.take_of_length_le (by grind), foldl_eq_scanl_getElem]
+          apply scanl_induction (i := i)
+          <;> grind [getElem_succ_scanl]
+
+theorem foldl_prefix_induction_of_preservation
+  {motive : β -> Prop}
+  {f : β -> α -> β}
+  {l : List α}
+  {init : β}
+  {i : Nat}
+  (preservation : ∀b, motive b -> ∀a, motive (f b a))
+  (base : motive ((l.take i).foldl f init))
+  : ∀j, i ≤ j -> motive ((l.take j).foldl f init) := by
+    apply foldl_prefix_induction
+    · assumption
+    · grind
 
 theorem foldl_full_prefix_induction
   {motive : β -> Prop}
   {f : β -> α -> β}
   {l : List α}
   {init : β}
-  (base : motive init)
-  (ih : ∀i h, motive ((l.take i).foldl f init) -> motive (f ((l.take i).foldl f init) l[i]))
+  {i : Nat}
+  (base : motive ((l.take i).foldl f init))
+  (ih : ∀j h, motive ((l.take j).foldl f init) -> motive (f ((l.take j).foldl f init) l[j]))
   : motive (l.foldl f init) := by
-    rw [<- List.take_length (l := l)]
-    apply foldl_prefix_induction
-    <;> grind
+    rw [show l = l.take l.length by grind]
+    if ltlen : i < l.length
+    then
+      apply foldl_prefix_induction (i := i) base
+      · grind
+      · grind
+    else grind [List.take_of_length_le]
+
+theorem foldl_full_prefix_induction_of_preservation
+  {motive : β -> Prop}
+  {f : β -> α -> β}
+  {l : List α}
+  {init : β}
+  {i : Nat}
+  (preservation : ∀b, motive b -> ∀a, motive (f b a))
+  (base : motive ((l.take i).foldl f init))
+  : motive (l.foldl f init) := by
+    apply foldl_full_prefix_induction (i := i) base
+    grind
 
 theorem scanl_idx_induction
   {motive : Nat -> β -> Prop}
@@ -72,6 +144,7 @@ theorem foldl_prefix_idx_induction
     rw [foldl_eq_scanl_getElem]
     apply scanl_idx_induction
     <;> grind [getElem_succ_scanl]
+
 
 theorem scanl_fn_hom
   {f : β -> α -> β}
