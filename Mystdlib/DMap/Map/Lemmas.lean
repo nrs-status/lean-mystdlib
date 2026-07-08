@@ -165,6 +165,19 @@ theorem isEmpty_iff_forall_mem
   : m.isEmpty <-> ∀a, ¬ a ∈ m := by
     apply DMap.isEmpty_iff_forall_mem
 
+@[simp, grind .]
+theorem not_mem_empty
+  {a : α}
+  : a ∉ (∅ : Map α β) := by
+    apply DMap.not_mem_empty
+
+theorem isEmpty_iff_eq_empty
+  {m : Map α β}
+  : m.isEmpty <-> m = ∅ := by
+    cases m
+    simp only [isEmpty, emptyCollection_def, mk.injEq]
+    apply DMap.isEmpty_iff_eq_empty
+
 theorem mem_insertEntry_self
   [EquivBEq α]
   {m : Map α β}
@@ -264,6 +277,26 @@ theorem getValueCast_union_of_mem_eq_false_left
   : Map.getValueCast k (m ∪ m') mem = m'.getValueCast k (by grind [mem_union_disj_of_mem]) := by
     apply DMap.getValueCast_union_of_mem_eq_false_left
     simpa
+
+
+theorem getValueCast_eq_getValueCastD
+  [LawfulBEq α]
+  {m : Map α β}
+  {a : α}
+  {fallback : β}
+  (h : a ∈ m)
+  : m.getValueCast a h = m.getValueCastD a fallback := by
+    apply DMap.getValueCast_eq_getValueCastD
+
+theorem getValueCast_union_of_mem_left_and_not_mem_right
+  [LawfulBEq α]
+  {m m' : Map α β}
+  {k : α}
+  (mem : k ∈ m)
+  (disjoint : k ∉ m')
+  : (m ∪ m').getValueCast k (by grind [mem_union_of_left]) = m.getValueCast k mem := by
+    apply DMap.getValueCast_union_of_mem_left_and_not_mem_right
+    simp_all [mem_iff_mem_inner]
 
 
 theorem mem_map

@@ -159,6 +159,19 @@ theorem isEmpty_iff_forall_mem
   : m.isEmpty <-> ∀a, ¬ a ∈ m := by
     apply Map.isEmpty_iff_forall_mem
 
+@[simp, grind .]
+theorem not_mem_empty
+  {a : α}
+  : a ∉ (∅ : Set α) := by
+    apply Map.not_mem_empty
+
+theorem isEmpty_iff_eq_empty
+  {s : Set α}
+  : s.isEmpty <-> s = ∅ := by
+    cases s
+    simp only [isEmpty, emptyCollection_def, mk.injEq]
+    apply Map.isEmpty_iff_eq_empty
+
 theorem mem_insertEntry_self
   [EquivBEq α]
   {m : Set α}
