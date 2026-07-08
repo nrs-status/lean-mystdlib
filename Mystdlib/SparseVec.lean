@@ -157,12 +157,7 @@ theorem get?_eq
   {idx : Fin w}
   : vec.get? idx = if h : vec.mask[idx] then Option.some (getElem vec.elems (vec.mask.leqCpop idx).toNat (get?_eq_aux h)) else Option.none := by
     unfold get? Raw.get?Impl
-    simp only [Fin.getElem_fin]
-    split <;> expose_names
-    · split
-      · simp_all [mask, elems]
-      · grind [mask]
-    · grind [mask]
+    grind [mask, elems]
 
 
 
