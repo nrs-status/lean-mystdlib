@@ -15,6 +15,9 @@ def toList (m : Set α) : List α :=
 instance : EmptyCollection (Set α) where
   emptyCollection := ⟨∅⟩
 
+instance : Singleton α (Set α) where
+  singleton := fun x => ⟨{(x, .unit)}⟩
+
 @[grind]
 def containsKey (a : α) (m : Set α) : Bool := 
   m.inner.containsKey a
@@ -76,7 +79,16 @@ def Disjoint (s s' : Set α) : Prop :=
   s.inner.Disjoint s'.inner
 
 def mapDedup  [BEq β] [PartialEquivBEq β] (s : Set α) (f : α -> β) : Set β :=
-  s.foldl (fun acc next => acc.insertEntry (f next)) ∅
+  insertListIfNew ∅ (s.toList.map f)
 
 def replaceEntry [PartialEquivBEq α] (k : α) (s : Set α) : Set α :=
   ⟨s.inner.replaceEntry k .unit⟩
+
+def filter (f : α -> Bool) (s : Set α) : Set α :=
+  ⟨s.inner.filter fun a _ => f a⟩
+
+def concatIfNew [PartialEquivBEq α] (s : Set α) (a : α) : Set α :=
+  ⟨s.inner.concatIfNew (a, .unit)⟩
+
+instance [Repr α] : Repr (Set α) where
+  reprPrec := fun s _ => repr s.toList

@@ -15,6 +15,9 @@ variable {α : Type u} [BEq α] {β : α → Type v}
 instance : EmptyCollection (DMap α β) where
   emptyCollection := ⟨[], by simp⟩
 
+instance : Singleton ((a : α) × β a) (DMap α β) where
+  singleton := fun x => ⟨[x], by simp [List.DistinctKeys.def]⟩
+
 def keys (m : DMap α β) : List α := 
   m.toList.keys
 
@@ -60,6 +63,9 @@ def getValueCast! [LawfulBEq α] (a : α) [Inhabited (β a)] (m : DMap α β) : 
 
 abbrev get! [LawfulBEq α] (a : α) [Inhabited (β a)] (m : DMap α β) : β a :=
   m.getValueCast! a
+
+def getValueCastD [LawfulBEq α] (a : α) (m : DMap α β) (fallback : β a) : β a :=
+  m.toList.getValueCastD a fallback
 
 def modifyKey [LawfulBEq α] (k : α) (f : β k -> β k) (m : DMap α β) : DMap α β :=
   ⟨m.toList.modifyKey k f, List.DistinctKeys.modifyKey m.distinctKeys⟩
@@ -132,6 +138,21 @@ def Disjoint (m m' : DMap α β) : Prop :=
 
 def map {γ : α -> Type w} (m : DMap α β) (f : (a : α) -> β a -> γ a) : DMap α γ :=
   ⟨m.toList.map fun p => ⟨p.fst, f p.fst p.snd⟩, List.DistinctKeys.map m.distinctKeys⟩
+
+def filter (f : (a : α) -> β a -> Bool) (m : DMap α β) : DMap α β :=
+  ⟨m.toList.filter fun p => f p.fst p.snd, List.DistinctKeys.filter m.distinctKeys⟩
+
+def concatIfNew [PartialEquivBEq α] (m : DMap α β) (e : (a : α) × β a) : DMap α β :=
+  ⟨m.toList.concatIfNew e, List.DistinctKeys.concatIfNew m.distinctKeys⟩
+
+def eraseKey [PartialEquivBEq α] (k : α) (m : DMap α β) : DMap α β :=
+  ⟨m.toList.eraseKey k, List.DistinctKeys.eraseKey m.distinctKeys⟩
+
+def eraseList [PartialEquivBEq α] (ks : List α) (m : DMap α β) : DMap α β :=
+  ⟨m.toList.eraseList ks, List.DistinctKeys.eraseList m.distinctKeys⟩
+
+instance [Repr α] [∀a, Repr (β a)] : Repr (DMap α β) where
+  reprPrec := fun m _ => repr m.toList
 
 end DMap
 

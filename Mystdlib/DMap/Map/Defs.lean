@@ -19,6 +19,9 @@ def keys (m : Map α β) : List α :=
 instance : EmptyCollection (Map α β) where
   emptyCollection := ⟨[], by simp⟩
 
+instance : Singleton (α × β) (Map α β) where
+  singleton := fun x => ⟨⟨[⟨x.1, x.2⟩], by simp [Std.Internal.List.DistinctKeys.def]⟩⟩
+
 @[grind]
 def containsKey (a : α) (m : Map α β) : Bool := 
   m.inner.containsKey a
@@ -54,6 +57,9 @@ def getValueCast! [LawfulBEq α] (a : α) [Inhabited β] (m : Map α β) : β :=
 
 abbrev get! [LawfulBEq α] (a : α) [Inhabited β] (m : Map α β) : β :=
   m.getValueCast! a
+
+def getValueCastD [LawfulBEq α] (a : α) (m : Map α β) (fallback : β) : β :=
+  m.inner.getValueCastD a fallback
 
 def getEntry? (m : Map α β) (a : α) : Option (α × β) :=
   DMap.Const.getEntry? m.inner a
@@ -116,6 +122,22 @@ def Disjoint (m m' : Map α β) : Prop :=
 
 def map {γ : Type w} (m : Map α β) (f : α -> β -> γ) : Map α γ :=
   ⟨m.inner.map f⟩
+
+def filter (f : α -> β -> Bool) (m : Map α β) : Map α β :=
+  ⟨m.inner.filter f⟩
+
+def concatIfNew [PartialEquivBEq α] (m : Map α β) (e : α × β) : Map α β :=
+  ⟨m.inner.concatIfNew ⟨e.fst, e.snd⟩⟩
+
+def eraseKey [PartialEquivBEq α] (k : α) (m : Map α β) : Map α β :=
+  ⟨m.inner.eraseKey k⟩
+
+def eraseList [PartialEquivBEq α] (ks : List α) (m : Map α β) : Map α β :=
+  ⟨m.inner.eraseList ks⟩
+
+
+instance [Repr α] [Repr β] : Repr (Map α β) where
+  reprPrec := fun m _ => repr m.toList
 
 namespace Unit
 
