@@ -1,3 +1,4 @@
+import Mathlib.Data.List.Nodup
 import Mystdlib.General
 import Std
 
@@ -30,5 +31,29 @@ def Std.HashMap.foldl_attaching
   : γ :=
    b.values_attach.foldl (fun xγ ⟨kσ, vσ⟩ => f xγ kσ vσ) init
 
-end
+/-
+Std.HashMap.mem_toList_iff_getElem?_eq_some
+-/
+namespace Std.HashMap
+def attach (hm : Std.HashMap α β) : Std.HashMap { x // x ∈ hm } β :=
+  .ofList (hm.toList.pmap (P := fun pair => pair.fst ∈ hm) (fun x y => ⟨⟨x.fst, !p⟩, x.snd⟩) !p)
+
+theorem attach_size
+  {hm : HashMap α β}
+  : hm.attach.size = hm.size := by
+    simp [attach]
+    rw [Std.HashMap.size_ofList]
+    · simp
+    · simp 
+      apply List.Nodup.pairwise_of_forall_ne 
+      · apply List.Nodup.pmap
+        · grind
+        · apply List.Nodup.of_map (f := Prod.fst)
+          rw [Std.HashMap.map_fst_toList_eq_keys ]
+          simp [HashMap.nodup_keys]
+      · grind
+
+
+
+
 
