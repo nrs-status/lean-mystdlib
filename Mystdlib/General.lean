@@ -92,6 +92,15 @@ elab "#grab_expand" c:command : command => do
 
 --
 
+open Lean Elab Term Meta in
+elab "#show_instances " e:term : command => Command.runTermElabM fun _ => do
+  let e ← elabTerm e none
+  let x ← (← getGlobalInstancesIndex).getUnify e
+  let xs := x.map fun i => (i.priority, i.globalName?.getD `noname)
+  logInfo m!"{xs.qsort fun a b => (a.1 < b.1 || a.1 == b.1 && a.2.quickLt b.2)}"
+
+--
+
 syntax (name := mod_match_pdescr) term " %fun| " term " => " term : term
 macro_rules 
 | `($x %fun| $y => $z) => `(fun | $y => $z | v => $x v)
