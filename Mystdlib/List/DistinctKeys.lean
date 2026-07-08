@@ -87,6 +87,63 @@ theorem DistinctKeys.append
       have := List.DistinctKeys.distinct h
       grind [keys, keys_eq_map]
 
+def _root_.List.concatIfNew
+  (l : List ((a : α) × β a))
+  (e : (a : α) × β a)
+  : List ((a : α) × β a) :=
+  match l with
+  | [] => [e]
+  | x :: xs => if x.1 == e.1
+  then l
+  else x :: concatIfNew xs e
+
+def _root_.List.concatIfNew_containsKey_eq_disj
+  [PartialEquivBEq α]
+  {l : List ((a : α) × β a)}
+  {e : (a : α) × β a}
+  {k : α}
+  : List.containsKey k (l.concatIfNew e) = (k == e.fst || List.containsKey k l) := by
+    fun_induction List.concatIfNew with
+    | case1 => 
+      simp only [containsKey, Bool.or_false]
+      grind
+    |case2 x xs h => 
+      simp_all only [Bool.eq_or_self, containsKey]
+      intro h'
+      simp only [Bool.or_eq_true]
+      left
+      rw [BEq.comm] at h'
+      apply BEq.trans h h'
+    | case3 x xs h ih =>
+      grind
+
+theorem _root_.List.DistinctKeys.concatIfNew
+  [PartialEquivBEq α]
+  {l : List ((a : α) × β a)}
+  {e : (a : α) × β a}
+  (hd : List.DistinctKeys l)
+  : List.DistinctKeys (l.concatIfNew e) := by
+    fun_induction List.concatIfNew with
+    | case1 => simp [DistinctKeys.def]
+    | case2 => assumption
+    | case3 head tail h ih =>
+      apply DistinctKeys.cons
+      · simp_all [List.concatIfNew_containsKey_eq_disj]
+        apply Std.Internal.List.DistinctKeys.containsKey_eq_false hd
+      · grind
+
+theorem _root_.List.DistinctKeys.eraseList
+  [PartialEquivBEq α]
+  {l : List ((a : α) × β a)}
+  {ks : List α}
+  (hd : List.DistinctKeys l)
+  : List.DistinctKeys (List.eraseList l ks) := by
+    fun_induction List.eraseList
+    · assumption
+    · rename_i ih
+      apply ih
+      apply List.DistinctKeys.eraseKey
+      assumption
 
 open Std Internal
 
@@ -100,7 +157,14 @@ theorem insertList_eq_foldl
 theorem insertList_scanl_getElem_containsKey
   [PartialEquivBEq α]
   {l toInsert : List ((a : α) × β a)}
-  : ∀(i : Nat) (h : i + 1 < (List.scanl (fun acc next => insertEntry next.fst next.snd acc) l toInsert).length) k, List.containsKey k (getElem (toInsert.scanl (fun acc next => List.insertEntry next.fst next.snd acc) l) (i + 1) h) <-> k == (getElem toInsert i (by grind)).fst ∨ List.containsKey k (getElem (toInsert.scanl (fun acc next => List.insertEntry next.fst next.snd acc) l) i (by grind)) := by
+  : ∀(i : Nat) 
+    (h : i + 1 < (List.scanl (fun acc next => insertEntry next.fst next.snd acc) l toInsert).length) k, 
+    List.containsKey k 
+      (getElem (toInsert.scanl (fun acc next => List.insertEntry next.fst next.snd acc) l) (i + 1) h) 
+    <-> 
+    k == (getElem toInsert i (by grind)).fst 
+    ∨ 
+    List.containsKey k (getElem (toInsert.scanl (fun acc next => List.insertEntry next.fst next.snd acc) l) i (by grind)) := by
     intro i h k
     rcases List.scanl_preservation
       (mot1 := fun b => List.containsKey k b)
