@@ -41,5 +41,23 @@ def genThm (decl_nm : Name) (statement : Syntax) (body : Syntax) : CommandElabM 
   }
 
 
+unsafe def mkExprEvalToExprEq_arrayAssignment (e : Expr) (eta_expand? : Bool) (assignments : Array (Option Expr)) : TermElabM Expr := do
+  let target <- if eta_expand? then etaExpand e else do return e
+  let (mvars, _, instantiatedExpr) <- lambdaMetaTelescope target
+  discard <| assignments.zipIdx.mapM fun | (.none, _) => return | (.some x, n) => discard <| isDefEq mvars[n]! x
+  let e' <- instantiateMVars instantiatedExpr
+  let r <- Expr.getBinderName target
+  dbg_trace r
+  let r' := Expr.getForallBinderNames (<- inferType target)
+  dbg_trace r'
+  eqOfEvalExprToExpr' e' 
 
+unsafe def mkExprEvalToExprEq_hashMapAssignment (e : Expr) (eta_expand? : Bool) (assignments : Std.HashMap Name Expr) : TermElabM Expr := do
+  let target <- if eta_expand? then etaExpand e else do return e
+  let binder_names := Expr.getForallBinderNames (<- inferType target)
+  let assignments := binder_names.toArray.map fun nm => assignments.get? nm
+  mkExprEvalToExprEq_arrayAssignment e eta_expand? assignments
 
+unsafe def mkExprEvalToExprEq (e : Expr) (eta_expand? : Bool) (assignments : Array (Option Expr) ⊕ Std.HashMap Name Expr) : TermElabM Expr := match assignments with
+| .inl x => mkExprEvalToExprEq_arrayAssignment e eta_expand? x
+| .inr x => mkExprEvalToExprEq_hashMapAssignment e eta_expand? x
