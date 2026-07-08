@@ -23,3 +23,13 @@ attribute [grind .] Std.HashSet.mem_of_mem_union_of_not_mem_left
 attribute [grind .] Std.HashSet.mem_of_mem_union_of_not_mem_right
 attribute [grind .] Std.HashSet.mem_union_of_left
 attribute [grind .] Std.HashSet.mem_union_of_right
+
+-- HashMap grindset
+
+attribute [grind .] Std.HashMap.nodup_keys 
+attribute [grind .] Std.DHashMap.nodup_keys 
+attribute [grind .] Std.TreeMap.nodup_keys 
+
+-- Pairwise grindset
+
+attribute [grind .] List.Pairwise.cons
